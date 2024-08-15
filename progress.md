@@ -1,19 +1,24 @@
 <details>
-  <summary>14 August</summary>
+    <summary>Progress</summary>
 
-  - **17:38**: Start watching guides
-  - **17:57**: Set up project
-  - **18:14**: Continue with guides
-  - **18:27**: Set up database
-  - **18:49**: Empty database, bridge, and Docker files are ready
-  - **18:51**: Continue with guide
-  - **19:15**: Develop `models/users.py` and `dto/users.py` 
-  - **20:01**: Work on roadmap, database, and DTOs, `dto/users.py`  now is `dto.py`
-  - **20:04**: commit and push
+<details>
+<summary>14 August</summary>
+
+- Set up project
+- Set up database
+- Empty database, bridge, and Docker files are ready
+- Develop `models/users.py` and `dto/users.py`
+- Work on roadmap, database, and DTOs, `dto/users.py`  now is `dto.py`
 
 </details>
+</details>
+<details>
+  <summary>TO DO</summary>
 
+  - [ ] change relations between tables  
+  - [ ] back_populates purpose and variations
 
+</details>
 
 ### Roadmap for E-Commerce Product Management API
 

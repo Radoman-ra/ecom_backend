@@ -1,7 +1,14 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
-from database import Base
+from project.database.database import Base
+
+order_product_table = Table(
+    "order_product",
+    Base.metadata,
+    Column("order_id", Integer, ForeignKey("orders.id"), primary_key=True),
+    Column("product_id", Integer, ForeignKey("products.id"), primary_key=True),
+)
 
 
 class User(Base):
@@ -54,7 +61,9 @@ class Product(Base):
 
     category = relationship("Category", back_populates="products")
     supplier = relationship("Supplier", back_populates="products")
-    orders = relationship("Order", back_populates="product")
+    orders = relationship(
+        "Order", secondary=order_product_table, back_populates="products"
+    )
 
 
 class Order(Base):
@@ -62,7 +71,6 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
     quantity = Column(Integer, default=0, index=True, nullable=False)
     order_date = Column(
         DateTime, default=datetime.datetime.now, index=True, nullable=False
@@ -70,4 +78,6 @@ class Order(Base):
     status = Column(String, default="Pending", index=True, nullable=False)
 
     user = relationship("User", back_populates="orders")
-    product = relationship("Product", back_populates="orders")
+    products = relationship(
+        "Product", secondary=order_product_table, back_populates="orders"
+    )
