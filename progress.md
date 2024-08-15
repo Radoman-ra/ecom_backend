@@ -15,8 +15,7 @@
 <details>
   <summary>TO DO</summary>
 
-  - [ ] change relations between tables  
-  - [ ] back_populates purpose and variations
+  - [ ] remove relations 
 
 </details>
 
