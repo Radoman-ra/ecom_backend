@@ -59,6 +59,7 @@ The API should include the following endpoints:
 1. **User Authentication:**
     - `POST /auth/login` endpoint should authenticate a user, return a JWT tokens in the response body, and also set the JWT token as a cookie.
     - `POST /auth/logout` endpoint that clears the JWT cookies, effectively logging the user out by invalidating the session.
+    - `POST /auth/register` Registers a new user in the system.
 
 2. **User Management:**
    - `POST /users/`: Create a new user (public endpoint).
