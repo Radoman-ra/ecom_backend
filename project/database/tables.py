@@ -1,7 +1,8 @@
 import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
-from project.database.database import Base
+from sqlalchemy.sql import func
+from database.database import Base
 
 order_product_table = Table(
     "order_product",
@@ -15,9 +16,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    password_hash = Column(String)
+    username = Column(String(50), unique=True, index=True)
+    email = Column(String(100), unique=True, index=True)
+    password_hash = Column(String(128))
     is_admin = Column(Boolean, default=False)
 
     orders = relationship("Order", back_populates="user")
@@ -27,9 +28,9 @@ class Supplier(Base):
     __tablename__ = "suppliers"
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
-    name = Column(String, unique=True, index=True)
-    contact_email = Column(String, unique=True, index=True)
-    phone_number = Column(String, unique=True, index=True)
+    name = Column(String(100), unique=True, index=True)
+    contact_email = Column(String(100), unique=True, index=True)
+    phone_number = Column(String(20), unique=True, index=True)
 
     products = relationship("Product", back_populates="supplier")
 
@@ -38,8 +39,8 @@ class Category(Base):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
-    name = Column(String, unique=True, index=True)
-    description = Column(String)
+    name = Column(String(50), unique=True, index=True)
+    description = Column(String(1000))
 
     products = relationship("Product", back_populates="category")
 
@@ -48,10 +49,10 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
-    name = Column(String, unique=True, index=True)
-    description = Column(String)
+    name = Column(String(100), unique=True, index=True)
+    description = Column(String(1000))
     price = Column(Integer, default=0, index=True)
-    creation_date = Column(DateTime, default=datetime.datetime.now)
+    creation_date = Column(DateTime, default=func.now)
     category_id = Column(
         Integer, ForeignKey("categories.id"), nullable=False, index=True
     )
@@ -72,10 +73,8 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True, unique=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     quantity = Column(Integer, default=0, index=True, nullable=False)
-    order_date = Column(
-        DateTime, default=datetime.datetime.now, index=True, nullable=False
-    )
-    status = Column(String, default="Pending", index=True, nullable=False)
+    order_date = Column(DateTime, default=func.now, index=True, nullable=False)
+    status = Column(String(50), default="Pending", index=True, nullable=False)
 
     user = relationship("User", back_populates="orders")
     products = relationship(

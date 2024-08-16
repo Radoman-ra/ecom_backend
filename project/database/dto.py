@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class UserDTO(BaseModel):
+class User(BaseModel):
     id: int
     username: str
     email: EmailStr
@@ -13,7 +13,7 @@ class UserDTO(BaseModel):
         orm_mode = True
 
 
-class SupplierDTO(BaseModel):
+class Supplier(BaseModel):
     id: int
     name: str
     contact_email: EmailStr
@@ -23,7 +23,7 @@ class SupplierDTO(BaseModel):
         orm_mode = True
 
 
-class CategoryDTO(BaseModel):
+class Category(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
@@ -32,7 +32,7 @@ class CategoryDTO(BaseModel):
         orm_mode = True
 
 
-class ProductDTO(BaseModel):
+class Product(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
@@ -45,7 +45,7 @@ class ProductDTO(BaseModel):
         orm_mode = True
 
 
-class OrderDTO(BaseModel):
+class Order(BaseModel):
     id: int
     user_id: int
     product_id: int
