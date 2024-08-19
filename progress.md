@@ -2,7 +2,7 @@
     <summary>Progress</summary>
 
 <details>
-<summary>14 August</summary>
+<summary>ver noname</summary>
 
 - Set up project
 - Set up database
@@ -11,11 +11,21 @@
 - Work on roadmap, database, and DTOs, `dto/users.py`  now is `dto.py`
 
 </details>
+<details>
+<summary>ver noname2</summary>
+
+- Authentication
+- Databases 
+</details>
+<details>
+<summary>16 August</summary>
+
+- Rewrigt databases
+- 
+</details>
 </details>
 <details>
   <summary>TO DO</summary>
-
-  - [ ] remove relations 
 
 </details>
 

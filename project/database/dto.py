@@ -8,6 +8,7 @@ class User(BaseModel):
     username: str
     email: EmailStr
     is_admin: bool
+    password_hash: str
 
     class Config:
         orm_mode = True
