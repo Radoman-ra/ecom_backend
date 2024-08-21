@@ -2,14 +2,16 @@ from fastapi import FastAPI, Depends, HTTPException, status, Response, Cookie
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database.dto import EmailStr
-from jwt_token import verify_refresh_token
-from utils import (
+from jwt_token import (
+    verify_refresh_token,
     create_access_token,
     create_refresh_token,
-    verify_password,
-    get_user_by_email,
     set_jwt_cookie,
     remove_jwt_cookie,
+)
+from utils import (
+    verify_password,
+    get_user_by_email,
     hash_password,
 )
 from database.database import get_db
