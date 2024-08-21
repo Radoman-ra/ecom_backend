@@ -1,10 +1,10 @@
 from passlib.context import CryptContext
 from fastapi import HTTPException, Response
 from sqlalchemy.orm import Session
-from database.dto import User
+from database.tables import User
 import jwt
 from jwt import PyJWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"
@@ -29,9 +29,9 @@ def get_user_by_email(db: Session, email: str) -> User:
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode.update({"exp": expire})
@@ -42,9 +42,11 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
 def create_refresh_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(timezone.utc) + timedelta(
+            days=REFRESH_TOKEN_EXPIRE_DAYS
+        )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -66,7 +68,7 @@ def set_jwt_cookie(
         value=access_token,
         httponly=True,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        expires=datetime.now()
+        expires=datetime.now(timezone.utc)
         + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     response.set_cookie(
@@ -74,7 +76,8 @@ def set_jwt_cookie(
         value=refresh_token,
         httponly=True,
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        expires=datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        expires=datetime.now(timezone.utc)
+        + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
     return response
 

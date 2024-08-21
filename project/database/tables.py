@@ -1,5 +1,13 @@
-import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
+from datetime import timezone
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Table,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database.database import Base
@@ -53,7 +61,7 @@ class Product(Base):
     name = Column(String(100), unique=True, index=True)
     description = Column(String(1000))
     price = Column(Integer, default=0, index=True)
-    creation_date = Column(DateTime, default=func.now())
+    creation_date = Column(DateTime, default=func.now(timezone.utc))
     category_id = Column(
         Integer, ForeignKey("categories.id"), nullable=False, index=True
     )
@@ -73,8 +81,12 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    order_date = Column(DateTime, default=func.now(), index=True, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+    order_date = Column(
+        DateTime, default=func.now(timezone.utc), index=True, nullable=False
+    )
     status = Column(String(50), default="Pending", index=True, nullable=False)
 
     user = relationship("User", back_populates="orders")
