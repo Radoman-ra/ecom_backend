@@ -68,7 +68,9 @@ async def login(
 @app.post("/auth/refresh", response_model=TokenResponse)
 async def refresh_token_auth(
     response: Response,
-    refresh_token: str = Cookie(None),
+    refresh_token: str = Cookie(
+        None
+    ),  # Automatically reads the refresh token from cookies
     db: Session = Depends(get_db),
 ):
     if not refresh_token:
@@ -76,11 +78,20 @@ async def refresh_token_auth(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token missing",
         )
-    token_data = verify_refresh_token(refresh_token)
+
+    try:
+        token_data = verify_refresh_token(refresh_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
     access_token = create_access_token(
         data={"sub": token_data["sub"], "user_id": token_data["user_id"]}
     )
     set_jwt_cookie(response, access_token, refresh_token)
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
