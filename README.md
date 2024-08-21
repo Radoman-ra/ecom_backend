@@ -62,7 +62,6 @@ The API should include the following endpoints:
     - `POST /auth/register` Registers a new user in the system.
 
 2. **User Management:**
-   - `POST /users/`: Create a new user (public endpoint).
    - `GET /users/me`: Retrieve the current user’s details (requires JWT).
    - `GET /users/{id}`: Retrieve details of a specific user (Admin only, requires JWT).
 
