@@ -61,14 +61,14 @@ class Product(Base):
     name = Column(String(100), unique=True, index=True)
     description = Column(String(1000))
     price = Column(Integer, default=0, index=True)
-    creation_date = Column(DateTime, default=func.now(timezone.utc))
+    creation_date = Column(DateTime, default=func.now())
     category_id = Column(
         Integer, ForeignKey("categories.id"), nullable=False, index=True
     )
     supplier_id = Column(
         Integer, ForeignKey("suppliers.id"), nullable=False, index=True
     )
-    quantity = Column(Integer, default=0, index=True)  # Added quantity field
+    quantity = Column(Integer, default=0, index=True)
 
     category = relationship("Category", back_populates="products")
     supplier = relationship("Supplier", back_populates="products")

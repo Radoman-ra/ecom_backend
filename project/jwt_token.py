@@ -1,7 +1,7 @@
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
-from database.dto import User
+from database.tables import User
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from fastapi.security import OAuth2PasswordBearer
@@ -15,6 +15,7 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
@@ -86,26 +87,34 @@ def remove_jwt_cookie(response: Response) -> Response:
     return response
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-):
+def decode_access_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-            )
-        user = db.query(User).filter(User.email == email).first()
-        if user is None:
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token decode",
+        )
+
+
+def get_user_by_token(token: str, db: Session):
+    try:
+        token_data = decode_access_token(token)
+        user = db.query(User).filter(User.id == token_data["user_id"]).first()
+        if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found",
             )
+        if user.email != token_data.get("sub"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email mismatch",
+            )
         return user
-    except JWTError:
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="Invalid token get user",
         )

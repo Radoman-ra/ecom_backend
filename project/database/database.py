@@ -23,6 +23,9 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 root_engine = create_engine(SQLALCHEMY_ROOT_DATABASE_URL, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+RootSessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=root_engine
+)
 
 Base = declarative_base()
 
@@ -33,3 +36,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_root_db():
+    root_db = RootSessionLocal()
+    try:
+        yield root_db
+    finally:
+        root_db.close()
