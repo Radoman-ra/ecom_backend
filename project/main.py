@@ -6,10 +6,12 @@ from fastapi import (
     status,
     Response,
     Cookie,
+    Query,
 )
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from database.tables import order_product_table
 from pydantic import BaseModel
 from database.dto import EmailStr
 from jwt_token import (
@@ -26,7 +28,7 @@ from utils import (
     hash_password,
 )
 from database.database import get_db, get_root_db
-from database.tables import Category, Product, User, Supplier
+from database.tables import Category, Order, Product, User, Supplier
 
 app = FastAPI()
 
@@ -104,6 +106,32 @@ class ProductResponse(BaseModel):
     category_id: int
     supplier_id: int
     quantity: int
+
+    class Config:
+        orm_mode = True
+
+
+class OrderProductCreate(BaseModel):
+    product_id: int
+    quantity: int
+
+
+class OrderCreate(BaseModel):
+    products: List[OrderProductCreate]
+
+
+class OrderProductResponse(BaseModel):
+    product_id: int
+    name: str
+    quantity: int
+
+
+class OrderResponse(BaseModel):
+    id: int
+    user_id: int
+    order_date: str
+    status: str
+    products: List[OrderProductResponse]
 
     class Config:
         orm_mode = True
@@ -325,6 +353,8 @@ async def create_category_admin_only(
 
 
 # products
+
+
 @app.get("/products", response_model=List[ProductResponse])
 async def get_products(
     category_id: Optional[int] = None,
@@ -469,3 +499,209 @@ async def delete_product_admin_only(
     db.commit()
 
     return {"msg": "Product deleted"}
+
+
+# Orders
+
+
+@app.get("/orders", response_model=List[OrderResponse])
+async def get_orders_admin_only(
+    db: Session = Depends(get_root_db), token: str = Depends(auth2_scheme)
+):
+    user = get_user_by_token(token, db)
+
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+
+    orders = db.query(Order).all()
+    order_responses = []
+    for order in orders:
+        products_with_quantity = []
+        for product in order.products:
+            quantity = (
+                db.query(order_product_table)
+                .filter_by(order_id=order.id, product_id=product.id)
+                .first()
+                .quantity
+            )
+            products_with_quantity.append(
+                OrderProductResponse(
+                    product_id=product.id,
+                    name=product.name,
+                    quantity=quantity,
+                )
+            )
+
+        order_responses.append(
+            OrderResponse(
+                id=order.id,
+                user_id=order.user_id,
+                order_date=order.order_date.isoformat(),
+                status=order.status,
+                products=products_with_quantity,
+            )
+        )
+
+    return order_responses
+
+
+@app.get("/orders/{id}", response_model=OrderResponse)
+async def get_order(
+    id: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(auth2_scheme),
+):
+    user = get_user_by_token(token, db)
+    order = db.query(Order).filter(Order.id == id).first()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+
+    if order.user_id != user.id and not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view this order",
+        )
+
+    order_products = (
+        db.query(
+            order_product_table.c.product_id, order_product_table.c.quantity
+        )
+        .filter(order_product_table.c.order_id == id)
+        .all()
+    )
+
+    product_quantities = {
+        product_id: quantity for product_id, quantity in order_products
+    }
+
+    return OrderResponse(
+        id=order.id,
+        user_id=order.user_id,
+        order_date=order.order_date.isoformat(),
+        status=order.status,
+        products=[
+            OrderProductResponse(
+                product_id=product.id,
+                name=product.name,
+                quantity=product_quantities.get(product.id, 0),
+            )
+            for product in order.products
+        ],
+    )
+
+
+@app.post("/orders", response_model=OrderResponse)
+async def create_order(
+    order_data: OrderCreate,
+    db: Session = Depends(get_db),
+    token: str = Depends(auth2_scheme),
+):
+    user = get_user_by_token(token, db)
+
+    new_order = Order(user_id=user.id)
+
+    db.add(new_order)
+    db.commit()
+
+    for item in order_data.products:
+        product = (
+            db.query(Product).filter(Product.id == item.product_id).first()
+        )
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with id {item.product_id} not found",
+            )
+        order_product_entry = order_product_table.insert().values(
+            order_id=new_order.id,
+            product_id=product.id,
+            quantity=item.quantity,
+        )
+        db.execute(order_product_entry)
+
+    db.commit()
+
+    db.refresh(new_order)
+
+    return OrderResponse(
+        id=new_order.id,
+        user_id=new_order.user_id,
+        order_date=new_order.order_date.isoformat(),
+        status=new_order.status,
+        products=[
+            OrderProductResponse(
+                product_id=product.id,
+                name=product.name,
+                quantity=item.quantity,
+            )
+            for product in new_order.products
+        ],
+    )
+
+
+@app.put("/orders/{id}", response_model=OrderResponse)
+async def update_order_status(
+    id: int,
+    status: str,
+    db: Session = Depends(get_root_db),
+    token: str = Depends(auth2_scheme),
+):
+    user = get_user_by_token(token, db)
+
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+
+    order = db.query(Order).filter(Order.id == id).first()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+
+    order.status = status
+    db.commit()
+    db.refresh(order)
+
+    order_products = (
+        db.query(
+            order_product_table.c.product_id, order_product_table.c.quantity
+        )
+        .filter(order_product_table.c.order_id == id)
+        .all()
+    )
+
+    product_quantities = {
+        product_id: quantity for product_id, quantity in order_products
+    }
+
+    products = (
+        db.query(Product)
+        .filter(Product.id.in_(product_quantities.keys()))
+        .all()
+    )
+
+    return OrderResponse(
+        id=order.id,
+        user_id=order.user_id,
+        order_date=order.order_date.isoformat(),
+        status=order.status,
+        products=[
+            OrderProductResponse(
+                product_id=product.id,
+                name=product.name,
+                quantity=product_quantities.get(product.id, 0),
+            )
+            for product in products
+        ],
+    )

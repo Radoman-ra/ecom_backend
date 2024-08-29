@@ -85,7 +85,7 @@ class Order(Base):
         Integer, ForeignKey("users.id"), nullable=False, index=True
     )
     order_date = Column(
-        DateTime, default=func.now(timezone.utc), index=True, nullable=False
+        DateTime, default=func.now(), index=True, nullable=False
     )
     status = Column(String(50), default="Pending", index=True, nullable=False)
 
