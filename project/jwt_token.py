@@ -1,12 +1,10 @@
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, Response, status
+from fastapi import HTTPException, Response, status
 from sqlalchemy.orm import Session
 from database.tables import User
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from fastapi.security import OAuth2PasswordBearer
-
-from database.database import get_db
 
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"

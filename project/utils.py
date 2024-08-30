@@ -1,13 +1,6 @@
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from database.tables import User
-import jwt
-from jwt import PyJWTError
-from datetime import datetime, timedelta, timezone
-
-from database.database import get_db
-from jwt_token import get_user_by_token
 
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"

@@ -12,8 +12,20 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database.tables import order_product_table
-from pydantic import BaseModel
-from database.dto import EmailStr
+from database.dto import (
+    CategoryCreate,
+    CategoryResponse,
+    OrderCreate,
+    OrderProductResponse,
+    OrderResponse,
+    ProductCreate,
+    ProductResponse,
+    ProductUpdate,
+    SupplierCreate,
+    SupplierResponse,
+    TokenResponse,
+    UserCreate,
+)
 from jwt_token import (
     get_user_by_token,
     verify_refresh_token,
@@ -33,109 +45,6 @@ from database.tables import Category, Order, Product, User, Supplier
 app = FastAPI()
 
 auth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
-# DTO
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str
-
-
-class LoginFrom(BaseModel):
-    email: str
-    password: str
-
-
-class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-
-
-class SupplierCreate(BaseModel):
-    name: str
-    contact_email: str
-    phone_number: str
-
-
-class SupplierResponse(BaseModel):
-    name: str
-    contact_email: str
-    phone_number: str
-
-
-class CategoryCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-
-
-class CategoryResponse(BaseModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-
-    class Config:
-        orm_mode = True
-
-
-class ProductCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: int
-    category_id: int
-    supplier_id: int
-    quantity: int
-
-
-class ProductUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[int] = None
-    category_id: Optional[int] = None
-    supplier_id: Optional[int] = None
-    quantity: Optional[int] = None
-
-
-class ProductResponse(BaseModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    price: int
-    category_id: int
-    supplier_id: int
-    quantity: int
-
-    class Config:
-        orm_mode = True
-
-
-class OrderProductCreate(BaseModel):
-    product_id: int
-    quantity: int
-
-
-class OrderCreate(BaseModel):
-    products: List[OrderProductCreate]
-
-
-class OrderProductResponse(BaseModel):
-    product_id: int
-    name: str
-    quantity: int
-
-
-class OrderResponse(BaseModel):
-    id: int
-    user_id: int
-    order_date: str
-    status: str
-    products: List[OrderProductResponse]
-
-    class Config:
-        orm_mode = True
-
 
 # auth
 
@@ -705,3 +614,65 @@ async def update_order_status(
             for product in products
         ],
     )
+
+
+# search
+
+
+@app.get("/search/", response_model=List[ProductResponse])
+async def search_products(
+    product_name: Optional[str] = Query(
+        None, description="Search by product name"
+    ),
+    creation_date_from: Optional[str] = Query(
+        None, description="Filter products created after this date"
+    ),
+    creation_date_to: Optional[str] = Query(
+        None, description="Filter products created before this date"
+    ),
+    min_price: Optional[int] = Query(None, description="Minimum price"),
+    max_price: Optional[int] = Query(None, description="Maximum price"),
+    category_name: Optional[str] = Query(
+        None, description="Search by category name"
+    ),
+    supplier_name: Optional[str] = Query(
+        None, description="Search by supplier name"
+    ),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Product)
+
+    if product_name:
+        query = query.filter(Product.name.ilike(f"%{product_name}%"))
+
+    if creation_date_from:
+        query = query.filter(Product.creation_date >= creation_date_from)
+
+    if creation_date_to:
+        query = query.filter(Product.creation_date <= creation_date_to)
+
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+
+    if category_name:
+        query = query.join(Category).filter(
+            Category.name.ilike(f"%{category_name}%")
+        )
+
+    if supplier_name:
+        query = query.join(Supplier).filter(
+            Supplier.name.ilike(f"%{supplier_name}%")
+        )
+
+    products = query.all()
+
+    if not products:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No products found matching the criteria",
+        )
+
+    return products
