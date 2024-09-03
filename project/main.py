@@ -2,7 +2,9 @@ from fastapi import (
     FastAPI,
     Depends,
     HTTPException,
+    Header,
     Path,
+    Request,
     status,
     Response,
     Cookie,
@@ -15,6 +17,7 @@ from database.tables import order_product_table
 from database.dto import (
     CategoryCreate,
     CategoryResponse,
+    LoginFrom,
     OrderCreate,
     OrderProductResponse,
     OrderResponse,
@@ -41,21 +44,67 @@ from utils import (
 )
 from database.database import get_db, get_root_db
 from database.tables import Category, Order, Product, User, Supplier
+from fastapi.security.base import SecurityBase
 
 app = FastAPI()
 
-auth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 # auth
+from fastapi.openapi.utils import get_openapi
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title="Your API Title",
+        version="1.0.0",
+        description="Your API Description",
+        routes=app.routes,
+    )
+
+    openapi_schema["components"]["securitySchemes"] = {
+        "AccessToken": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "`Enter your access token`",
+        },
+    }
+
+    security_requirements = {
+        "/auth/logout": ["post"],
+        "/suppliers": ["post"],
+        "/categories": ["post"],
+        "/products": ["post"],
+        "/products/{id}": ["put", "delete"],
+        "/orders": ["post", "get"],
+        "/orders/{id}": ["put"],
+    }
+
+    for path, methods in security_requirements.items():
+        path_item = openapi_schema.get("paths", {}).get(path, {})
+        for method in methods:
+            if method in path_item:
+                operation = path_item[method]
+                if "security" not in operation:
+                    operation["security"] = [{"AccessToken": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 
 @app.post("/auth/login", response_model=TokenResponse)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    form_data: LoginFrom = Depends(),
     db: Session = Depends(get_db),
     response: Response = Response(),
 ):
-    user = get_user_by_email(db, form_data.username)
+    user = get_user_by_email(db, form_data.email)
 
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
@@ -82,9 +131,8 @@ async def login(
 @app.post("/auth/refresh", response_model=TokenResponse)
 async def refresh_token_auth(
     response: Response,
-    refresh_token: str = Cookie(None),
+    refresh_token: str,
     db: Session = Depends(get_db),
-    token: str = Depends(auth2_scheme),
 ):
     if not refresh_token:
         raise HTTPException(
@@ -117,11 +165,7 @@ async def refresh_token_auth(
     summary="Logout User",
     response_description="Successfully logged out",
 )
-async def logout(
-    response: Response,
-    refresh_token: Optional[str] = Cookie(None),
-    token: str = Depends(auth2_scheme),
-):
+async def logout(response: Response, authorization: str = Header(None)):
     remove_jwt_cookie(response)
     return {"msg": "Successfully logged out"}
 
@@ -161,9 +205,9 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 async def create_supplier_admin_only(
     supplier_data: SupplierCreate,
     db: Session = Depends(get_root_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(
@@ -226,9 +270,9 @@ async def get_categories(db: Session = Depends(get_db)):
 async def create_category_admin_only(
     category_data: CategoryCreate,
     db: Session = Depends(get_root_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(
@@ -302,9 +346,9 @@ async def get_product(
 async def create_product_admin_only(
     product_data: ProductCreate,
     db: Session = Depends(get_root_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(
@@ -350,9 +394,9 @@ async def update_product_admin_only(
     product_data: ProductUpdate,
     id: int = Path(..., gt=0),
     db: Session = Depends(get_root_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(
@@ -388,9 +432,9 @@ async def update_product_admin_only(
 async def delete_product_admin_only(
     id: int = Path(..., gt=0),
     db: Session = Depends(get_root_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(
@@ -415,9 +459,10 @@ async def delete_product_admin_only(
 
 @app.get("/orders", response_model=List[OrderResponse])
 async def get_orders_admin_only(
-    db: Session = Depends(get_root_db), token: str = Depends(auth2_scheme)
+    db: Session = Depends(get_root_db),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(
@@ -461,9 +506,9 @@ async def get_orders_admin_only(
 async def get_order(
     id: int,
     db: Session = Depends(get_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
     order = db.query(Order).filter(Order.id == id).first()
 
     if not order:
@@ -510,9 +555,9 @@ async def get_order(
 async def create_order(
     order_data: OrderCreate,
     db: Session = Depends(get_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     new_order = Order(user_id=user.id)
 
@@ -560,9 +605,9 @@ async def update_order_status(
     id: int,
     status: str,
     db: Session = Depends(get_root_db),
-    token: str = Depends(auth2_scheme),
+    authorization: str = Header(None),
 ):
-    user = get_user_by_token(token, db)
+    user = get_user_by_token(authorization, db)
 
     if not user.is_admin:
         raise HTTPException(

@@ -9,7 +9,7 @@ class TokenResponse(BaseModel):
 
 
 class LoginFrom(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
