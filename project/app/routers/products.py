@@ -6,9 +6,9 @@ from controllers.products_controller import (
     update_product,
     delete_product,
 )
-from schemas.schemas import ProductCreate, ProductResponse
+from schemas.schemas import ProductCreate, ProductResponse, ProductUpdate
 from dependencies.db_dependencies import get_db
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -16,9 +16,11 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 @router.post("/", response_model=ProductResponse)
 async def create_new_product(
-    product_data: ProductCreate, db: Session = Depends(get_db)
+    product_data: ProductCreate,
+    db: Session = Depends(get_db),
+    authorization: str = Header(None),
 ):
-    return create_product(product_data, db)
+    return create_product(product_data, db, authorization)
 
 
 @router.get("/", response_model=List[ProductResponse])
@@ -28,13 +30,18 @@ async def fetch_all_products(db: Session = Depends(get_db)):
 
 @router.put("/{product_id}", response_model=ProductResponse)
 async def update_existing_product(
-    product_id: int, product_data: ProductCreate, db: Session = Depends(get_db)
+    product_id: int,
+    product_data: ProductUpdate,
+    db: Session = Depends(get_db),
+    authorization: str = Header(None),
 ):
-    return update_product(product_id, product_data, db)
+    return update_product(product_id, product_data, db, authorization)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_product(
-    product_id: int, db: Session = Depends(get_db)
+    product_id: int,
+    db: Session = Depends(get_db),
+    authorization: str = Header(None),
 ):
-    return delete_product(product_id, db)
+    return delete_product(product_id, db, authorization)

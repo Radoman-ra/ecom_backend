@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from database.tables import User
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -24,3 +25,11 @@ def authenticate_user(db: Session, email: str, password: str):
     if not verify_password(password, user.hashed_password):
         return False
     return user
+
+
+def check_admin_privileges(user):
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )

@@ -35,12 +35,14 @@ def custom_openapi():
 
     security_requirements = {
         "/auth/logout": ["post"],
-        "/suppliers": ["post"],
-        "/categories": ["post"],
-        "/products": ["post"],
-        "/products/{id}": ["put", "delete"],
-        "/orders": ["post", "get"],
-        "/orders/{id}": ["put"],
+        "/suppliers/": ["post"],
+        "/suppliers/{supplier_id}": ["put", "delete"],
+        "/categories/": ["post"],
+        "/categories/{category_id}": ["put", "delete"],
+        "/products/": ["post"],
+        "/products/{product_id}": ["put", "delete"],
+        "/orders/": ["post", "get"],
+        "/orders/{order_id}": ["put", "delete"],
     }
 
     for path, methods in security_requirements.items():

@@ -40,7 +40,7 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
     )
 
 
-def refresh_token(response: Response, refresh_token: str, db: Session):
+def refresh_access_token(response: Response, refresh_token: str, db: Session):
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

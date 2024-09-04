@@ -1,3 +1,5 @@
+from core.security import get_user_by_token
+from utils.utils import check_admin_privileges
 from schemas.schemas import CategoryCreate, CategoryResponse
 from database.tables import Category
 from fastapi import HTTPException, status
@@ -5,8 +7,12 @@ from sqlalchemy.orm import Session
 
 
 def create_category(
-    category_data: CategoryCreate, db: Session
+    category_data: CategoryCreate,
+    db: Session,
+    authorization: str,
 ) -> CategoryResponse:
+    user = get_user_by_token(authorization, db)
+    check_admin_privileges(user)
     category = Category(
         name=category_data.name, description=category_data.description
     )
@@ -22,8 +28,14 @@ def get_all_categories(db: Session) -> list[CategoryResponse]:
 
 
 def update_category(
-    category_id: int, category_data: CategoryCreate, db: Session
+    category_id: int,
+    category_data: CategoryCreate,
+    db: Session,
+    authorization: str,
 ) -> CategoryResponse:
+    user = get_user_by_token(authorization, db)
+    check_admin_privileges(user)
+
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
         raise HTTPException(
@@ -31,14 +43,25 @@ def update_category(
             detail="Category not found",
         )
 
-    category.name = category_data.name
-    category.description = category_data.description
+    if category_data.name:
+        category.name = category_data.name
+
+    if category_data.description:
+        category.description = category_data.description
+
     db.commit()
     db.refresh(category)
+
     return CategoryResponse.from_orm(category)
 
 
-def delete_category(category_id: int, db: Session):
+def delete_category(
+    category_id: int,
+    db: Session,
+    authorization: str,
+):
+    user = get_user_by_token(authorization, db)
+    check_admin_privileges(user)
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
         raise HTTPException(

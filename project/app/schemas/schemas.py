@@ -22,14 +22,23 @@ class UserCreate(BaseModel):
 
 class SupplierCreate(BaseModel):
     name: str
-    contact_email: str
+    contact_email: EmailStr
     phone_number: str
+
+
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
 
 
 class SupplierResponse(BaseModel):
-    name: str
-    contact_email: str
-    phone_number: str
+    name: Optional[str]
+    contact_email: Optional[EmailStr]
+    phone_number: Optional[str]
+
+    class Config:
+        from_attributes = True
 
 
 class CategoryCreate(BaseModel):
@@ -74,7 +83,7 @@ class ProductResponse(BaseModel):
     quantity: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OrderProductCreate(BaseModel):
@@ -88,7 +97,6 @@ class OrderCreate(BaseModel):
 
 class OrderProductResponse(BaseModel):
     product_id: int
-    name: str
     quantity: int
 
 
@@ -101,3 +109,4 @@ class OrderResponse(BaseModel):
 
     class Config:
         orm_mode = True
+        from_attributes = True

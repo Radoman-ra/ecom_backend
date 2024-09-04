@@ -5,6 +5,7 @@ from dependencies.db_dependencies import get_db
 from controllers.auth_controller import (
     login_user,
     logout_user,
+    refresh_access_token,
     register_new_user,
 )
 
@@ -26,7 +27,7 @@ async def refresh_token_auth(
     refresh_token: str,
     db: Session = Depends(get_db),
 ):
-    return refresh_token(response, refresh_token, db)
+    return refresh_access_token(response, refresh_token, db)
 
 
 @router.post(

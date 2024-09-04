@@ -1,14 +1,21 @@
-from schemas.schemas import SupplierCreate, SupplierResponse
+from core.security import get_user_by_token
+from utils.utils import check_admin_privileges
+from schemas.schemas import SupplierCreate, SupplierResponse, SupplierUpdate
 from database.tables import Supplier
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 
 def create_supplier(
-    supplier_data: SupplierCreate, db: Session
+    supplier_data: SupplierCreate, db: Session, authorization: str
 ) -> SupplierResponse:
+    user = get_user_by_token(authorization, db)
+    check_admin_privileges(user)
+
     supplier = Supplier(
-        name=supplier_data.name, contact_info=supplier_data.contact_info
+        name=supplier_data.name,
+        contact_email=supplier_data.contact_email,
+        phone_number=supplier_data.phone_number,
     )
     db.add(supplier)
     db.commit()
@@ -22,8 +29,14 @@ def get_all_suppliers(db: Session) -> list[SupplierResponse]:
 
 
 def update_supplier(
-    supplier_id: int, supplier_data: SupplierCreate, db: Session
+    supplier_id: int,
+    supplier_data: SupplierUpdate,
+    db: Session,
+    authorization: str,
 ) -> SupplierResponse:
+    user = get_user_by_token(authorization, db)
+    check_admin_privileges(user)
+
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not supplier:
         raise HTTPException(
@@ -31,14 +44,28 @@ def update_supplier(
             detail="Supplier not found",
         )
 
-    supplier.name = supplier_data.name
-    supplier.contact_info = supplier_data.contact_info
+    if supplier_data.name:
+        supplier.name = supplier_data.name
+
+    if supplier_data.contact_email:
+        supplier.contact_email = supplier_data.contact_email
+
+    if supplier_data.phone_number:
+        supplier.phone_number = supplier_data.phone_number
+
     db.commit()
     db.refresh(supplier)
+
     return SupplierResponse.from_orm(supplier)
 
 
-def delete_supplier(supplier_id: int, db: Session):
+def delete_supplier(
+    supplier_id: int,
+    db: Session,
+    authorization: str,
+):
+    user = get_user_by_token(authorization, db)
+    check_admin_privileges(user)
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not supplier:
         raise HTTPException(
