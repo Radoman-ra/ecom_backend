@@ -93,11 +93,13 @@ class OrderProductCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     products: List[OrderProductCreate]
+    status: Optional[str] = None
 
 
 class OrderProductResponse(BaseModel):
     product_id: int
     quantity: int
+    status: Optional[str] = None
 
 
 class OrderResponse(BaseModel):
@@ -110,3 +112,7 @@ class OrderResponse(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
+
+class OrderUpdate(BaseModel):
+    status: Optional[str] = None

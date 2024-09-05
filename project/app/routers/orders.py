@@ -6,7 +6,7 @@ from controllers.orders_controller import (
     update_order,
     delete_order,
 )
-from schemas.schemas import OrderCreate, OrderResponse
+from schemas.schemas import OrderCreate, OrderResponse, OrderUpdate
 from dependencies.db_dependencies import get_db
 from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.orm import Session
@@ -34,7 +34,7 @@ async def fetch_all_orders(
 @router.put("/{order_id}", response_model=OrderResponse)
 async def update_existing_order(
     order_id: int,
-    order_data: OrderCreate,
+    order_data: OrderUpdate,
     db: Session = Depends(get_db),
     authorization: str = Header(None),
 ):
