@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from controllers.orders_controller import (
     create_order,
@@ -8,7 +8,7 @@ from controllers.orders_controller import (
 )
 from schemas.schemas import OrderCreate, OrderResponse, OrderUpdate
 from dependencies.db_dependencies import get_db
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -27,8 +27,10 @@ async def create_new_order(
 async def fetch_all_orders(
     db: Session = Depends(get_db),
     authorization: str = Header(None),
+    limit: Optional[int] = Query(10, ge=1),
+    offset: Optional[int] = Query(0, ge=0),
 ):
-    return get_all_orders(db, authorization)
+    return get_all_orders(db, authorization, limit, offset)
 
 
 @router.put("/{order_id}", response_model=OrderResponse)

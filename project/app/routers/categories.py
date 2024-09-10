@@ -8,7 +8,7 @@ from controllers.categories_controller import (
 )
 from schemas.schemas import CategoryCreate, CategoryResponse
 from dependencies.db_dependencies import get_db
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/categories", tags=["categories"])
@@ -24,8 +24,12 @@ async def create_new_category(
 
 
 @router.get("/", response_model=List[CategoryResponse])
-async def fetch_all_categories(db: Session = Depends(get_db)):
-    return get_all_categories(db)
+async def fetch_all_categories(
+    db: Session = Depends(get_db),
+    limit: int = Query(10, le=100),
+    offset: int = Query(0, ge=0),
+):
+    return get_all_categories(db, limit, offset)
 
 
 @router.put("/{category_id}", response_model=CategoryResponse)

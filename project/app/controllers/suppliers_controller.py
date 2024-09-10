@@ -23,8 +23,10 @@ def create_supplier(
     return SupplierResponse.from_orm(supplier)
 
 
-def get_all_suppliers(db: Session) -> list[SupplierResponse]:
-    suppliers = db.query(Supplier).all()
+def get_all_suppliers(
+    db: Session, limit: int, offset: int
+) -> list[SupplierResponse]:
+    suppliers = db.query(Supplier).offset(offset).limit(limit).all()
     return [SupplierResponse.from_orm(supplier) for supplier in suppliers]
 
 

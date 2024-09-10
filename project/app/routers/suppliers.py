@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from controllers.suppliers_controller import (
     create_supplier,
@@ -8,7 +8,7 @@ from controllers.suppliers_controller import (
 )
 from schemas.schemas import SupplierCreate, SupplierResponse, SupplierUpdate
 from dependencies.db_dependencies import get_db
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
@@ -24,8 +24,12 @@ async def create_new_supplier(
 
 
 @router.get("/", response_model=List[SupplierResponse])
-async def fetch_all_suppliers(db: Session = Depends(get_db)):
-    return get_all_suppliers(db)
+async def fetch_all_suppliers(
+    limit: Optional[int] = Query(10, le=100),
+    offset: Optional[int] = Query(0),
+    db: Session = Depends(get_db),
+):
+    return get_all_suppliers(db, limit=limit, offset=offset)
 
 
 @router.put("/{supplier_id}", response_model=SupplierResponse)

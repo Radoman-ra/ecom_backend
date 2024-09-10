@@ -27,8 +27,10 @@ def create_product(
     return ProductResponse.from_orm(product)
 
 
-def get_all_products(db: Session) -> list[ProductResponse]:
-    products = db.query(Product).all()
+def get_all_products(
+    db: Session, limit: int, offset: int
+) -> list[ProductResponse]:
+    products = db.query(Product).offset(offset).limit(limit).all()
     return [ProductResponse.from_orm(product) for product in products]
 
 

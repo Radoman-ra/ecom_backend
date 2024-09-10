@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from controllers.products_controller import (
     create_product,
@@ -8,7 +8,7 @@ from controllers.products_controller import (
 )
 from schemas.schemas import ProductCreate, ProductResponse, ProductUpdate
 from dependencies.db_dependencies import get_db
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -24,8 +24,12 @@ async def create_new_product(
 
 
 @router.get("/", response_model=List[ProductResponse])
-async def fetch_all_products(db: Session = Depends(get_db)):
-    return get_all_products(db)
+async def fetch_all_products(
+    db: Session = Depends(get_db),
+    limit: Optional[int] = Query(10, ge=1, le=100),
+    offset: Optional[int] = Query(0, ge=0),
+):
+    return get_all_products(db, limit, offset)
 
 
 @router.put("/{product_id}", response_model=ProductResponse)

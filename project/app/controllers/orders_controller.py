@@ -1,3 +1,4 @@
+from typing import List
 from core.security import get_user_by_token
 from utils.utils import check_admin_privileges
 from schemas.schemas import (
@@ -83,13 +84,13 @@ def create_order(
 
 
 def get_all_orders(
-    db: Session,
-    authorization: str,
-) -> list[OrderResponse]:
+    db: Session, authorization: str, limit: int, offset: int
+) -> List[OrderResponse]:
     user = get_user_by_token(authorization, db)
     check_admin_privileges(user)
 
-    orders = db.query(Order).all()
+    orders_query = db.query(Order).offset(offset).limit(limit)
+    orders = orders_query.all()
 
     order_responses = []
     for order in orders:

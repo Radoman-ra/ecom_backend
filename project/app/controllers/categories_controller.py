@@ -22,8 +22,10 @@ def create_category(
     return CategoryResponse.from_orm(category)
 
 
-def get_all_categories(db: Session) -> list[CategoryResponse]:
-    categories = db.query(Category).all()
+def get_all_categories(
+    db: Session, limit: int, offset: int
+) -> list[CategoryResponse]:
+    categories = db.query(Category).offset(offset).limit(limit).all()
     return [CategoryResponse.from_orm(category) for category in categories]
 
 
