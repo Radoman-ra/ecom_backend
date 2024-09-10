@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    form_data: LoginFrom = Depends(),
+    form_data: LoginFrom,
     db: Session = Depends(get_db),
     response: Response = Response(),
 ):
