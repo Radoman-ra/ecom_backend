@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from core.security import get_user_by_token
 from utils.utils import check_admin_privileges
 from schemas.schemas import (
@@ -10,6 +10,8 @@ from schemas.schemas import (
 from database.tables import Order, Product, order_product_table
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+import math
+from typing import Dict, Any
 
 
 def create_order(
@@ -18,7 +20,6 @@ def create_order(
     authorization: str,
 ) -> OrderResponse:
     user = get_user_by_token(authorization, db)
-    check_admin_privileges(user)
 
     order = Order(
         user_id=user.id,
@@ -81,6 +82,63 @@ def create_order(
         status=order.status,
         products=product_responses,
     )
+
+def get_orders_by_user(
+    db: Session, authorization: str, limit: int, offset: int, status: Optional[str] = None
+) -> Dict[str, Any]:
+    user = get_user_by_token(authorization, db)
+
+    # Base query for user's orders
+    query = db.query(Order).filter(Order.user_id == user.id)
+    
+    # Apply status filter if provided
+    if status:
+        query = query.filter(Order.status == status)
+
+    # Get total number of filtered orders
+    total_orders = query.count()
+
+    # Calculate total pages
+    total_pages = math.ceil(total_orders / limit)
+    
+    # Calculate current page
+    current_page = (offset // limit) + 1
+
+    # Query paginated orders with offset and limit
+    orders = query.offset(offset).limit(limit).all()
+
+    order_responses = []
+    for order in orders:
+        order_date_str = order.order_date.isoformat()
+
+        products_with_quantity = (
+            db.query(Product, order_product_table.c.quantity)
+            .join(order_product_table, Product.id == order_product_table.c.product_id)
+            .filter(order_product_table.c.order_id == order.id)
+            .all()
+        )
+
+        product_responses = [
+            OrderProductResponse(product_id=product.id, quantity=quantity)
+            for product, quantity in products_with_quantity
+        ]
+
+        order_responses.append(
+            OrderResponse(
+                id=order.id,
+                user_id=order.user_id,
+                order_date=order_date_str,
+                status=order.status,
+                products=product_responses,
+            )
+        )
+
+    return {
+        "current_page": current_page,
+        "total_pages": total_pages,
+        "orders": order_responses,
+    }
+
 
 
 def get_all_orders(

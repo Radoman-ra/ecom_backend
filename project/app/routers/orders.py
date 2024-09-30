@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from controllers.orders_controller import (
     create_order,
     get_all_orders,
+    get_orders_by_user,
     update_order,
     delete_order,
 )
@@ -22,6 +23,18 @@ async def create_new_order(
     authorization: str = Header(None),
 ):
     return create_order(order_data, db, authorization)
+
+@router.get("/my-orders", response_model=Dict[str, Any])
+async def fetch_my_orders(
+    db: Session = Depends(get_db),
+    authorization: str = Header(None),
+    limit: Optional[int] = Query(10, ge=1),
+    offset: Optional[int] = Query(0, ge=0),
+    status: Optional[str] = Query(None)  # New optional status filter
+):
+    return get_orders_by_user(db, authorization, limit, offset, status)
+
+
 
 
 @router.get("/", response_model=List[OrderResponse])

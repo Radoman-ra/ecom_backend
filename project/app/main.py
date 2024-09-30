@@ -67,6 +67,7 @@ def custom_openapi():
         "/api/products/": ["post"],
         "/api/products/{product_id}": ["put", "delete"],
         "/api/orders/": ["post", "get"],
+        "/api/orders/my-orders": ["get"],
         "/api/orders/{order_id}": ["put", "delete"],
     }
 
