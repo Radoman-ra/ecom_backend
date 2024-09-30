@@ -9,7 +9,8 @@ from controllers.auth_controller import (
     register_new_user,
 )
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)

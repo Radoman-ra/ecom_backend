@@ -14,23 +14,11 @@ async def seed_products(
 
     category_ids = [c.id for c in categories]
     supplier_ids = [s.id for s in suppliers]
-
-    used_names = set()
     products_to_add = []
 
     async for _ in tqdm(range(num_products), desc="Seeding Products"):
-        base_name = fake.word()
-        name = base_name
-        counter = 1
-
-        while name in used_names:
-            name = f"{base_name}{counter}"
-            counter += 1
-
-        used_names.add(name)
-
         product = Product(
-            name=name,
+            name=fake.word(),
             description=fake.text(max_nb_chars=500),
             price=fake.random_number(digits=3),
             category_id=fake.random_element(elements=category_ids),

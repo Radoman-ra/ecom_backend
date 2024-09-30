@@ -6,7 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-env_path = Path(__file__).resolve().parents[2] / ".env"
+
+env_path = Path(__file__).resolve().parents[3] / ".env"
 load_dotenv(dotenv_path=env_path)
 
 MYSQL_USER = os.getenv("MYSQL_USER")
@@ -24,9 +25,7 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 root_engine = create_engine(SQLALCHEMY_ROOT_DATABASE_URL, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-RootSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=root_engine
-)
+RootSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=root_engine)
 
 Base = declarative_base()
 

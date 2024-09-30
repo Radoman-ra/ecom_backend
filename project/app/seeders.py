@@ -32,8 +32,8 @@ async def seed():
         await clear_db(db)
         await seed_suppliers(db, 10000)
         await seed_categories(db, 10000)
-        await seed_products(db, 20000)
-        await seed_orders(db, 10000)
+        await seed_products(db, 200000)
+        # await seed_orders(db, 10000)
     finally:
         db.close()
 

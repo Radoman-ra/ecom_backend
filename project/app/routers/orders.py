@@ -11,7 +11,8 @@ from dependencies.db_dependencies import get_db
 from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
-router = APIRouter(prefix="/orders", tags=["orders"])
+
+router = APIRouter(prefix="/api/orders", tags=["orders"])
 
 
 @router.post("/", response_model=OrderResponse)

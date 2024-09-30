@@ -1,23 +1,24 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from dependencies.db_dependencies import get_db
 from schemas.schemas import ProductResponse
 from controllers.search_controller import search_for_products_controller
 
-router = APIRouter(prefix="/search", tags=["search"])
+
+router = APIRouter(prefix="/api/search", tags=["search"])
 
 
-@router.get("/products", response_model=List[ProductResponse])
+@router.get("/products", response_model=Dict[str, Any])
 async def search_for_products(
     product_name: Optional[str] = Query(
         None, description="Search by product name"
     ),
     creation_date_from: Optional[str] = Query(
-        None, description="Filter products created after this date"
+        None, description="Filter products created after this date", regex=r"^\d{4}-\d{2}-\d{2}$"
     ),
     creation_date_to: Optional[str] = Query(
-        None, description="Filter products created before this date"
+        None, description="Filter products created before this date", regex=r"^\d{4}-\d{2}-\d{2}$"
     ),
     min_price: Optional[int] = Query(None, description="Minimum price"),
     max_price: Optional[int] = Query(None, description="Maximum price"),

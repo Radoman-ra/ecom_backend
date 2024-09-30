@@ -1,9 +1,34 @@
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from routers import auth, categories, products, suppliers, orders, search
 
 app = FastAPI()
 from fastapi.openapi.utils import get_openapi
+
+origins = [
+    "http://localhost:5173",  # Укажите ваш фронтенд-URL
+    "http://127.0.0.1:5173",  # Дополнительный вариант
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Разрешенные источники
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешить все методы
+    allow_headers=["*"],   # Разрешить все заголовки
+)
+
+@app.middleware("http")
+async def log_time_used(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    duration *= 1000
+    print(f"Request to {request.url.path} took {duration:.4f} ms")
+    return response
+
 
 app.include_router(auth.router)
 app.include_router(suppliers.router)
@@ -34,15 +59,15 @@ def custom_openapi():
     }
 
     security_requirements = {
-        "/auth/logout": ["post"],
-        "/suppliers/": ["post"],
-        "/suppliers/{supplier_id}": ["put", "delete"],
-        "/categories/": ["post"],
-        "/categories/{category_id}": ["put", "delete"],
-        "/products/": ["post"],
-        "/products/{product_id}": ["put", "delete"],
-        "/orders/": ["post", "get"],
-        "/orders/{order_id}": ["put", "delete"],
+        "/api/auth/logout": ["post"],
+        "/api/suppliers/": ["post"],
+        "/api/suppliers/{supplier_id}": ["put", "delete"],
+        "/api/categories/": ["post"],
+        "/api/categories/{category_id}": ["put", "delete"],
+        "/api/products/": ["post"],
+        "/api/products/{product_id}": ["put", "delete"],
+        "/api/orders/": ["post", "get"],
+        "/api/orders/{order_id}": ["put", "delete"],
     }
 
     for path, methods in security_requirements.items():

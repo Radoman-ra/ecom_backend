@@ -85,6 +85,12 @@ class ProductResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class PaginatedProductResponse(BaseModel):
+    products: List[ProductResponse]
+    total_products: int
+    total_pages: int
+    current_page: int
 
 
 class OrderProductCreate(BaseModel):

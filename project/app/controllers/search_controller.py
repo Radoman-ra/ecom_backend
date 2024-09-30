@@ -1,10 +1,9 @@
-from typing import Optional, List
+from typing import Any, Dict, Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from schemas.schemas import ProductResponse
 from database.tables import Product, Category, Supplier
 from datetime import datetime
-
 
 async def search_for_products_controller(
     product_name: Optional[str],
@@ -17,7 +16,7 @@ async def search_for_products_controller(
     limit: int,
     offset: int,
     db: Session,
-) -> List[ProductResponse]:
+) -> Dict[str, Any]:
     query = db.query(Product)
 
     if product_name:
@@ -60,6 +59,10 @@ async def search_for_products_controller(
             Supplier.name.ilike(f"%{supplier_name}%")
         )
 
+    # Получаем общее количество продуктов без применения limit и offset
+    total_products = query.count()
+
+    # Применяем offset и limit для пагинации
     products = query.offset(offset).limit(limit).all()
 
     if not products:
@@ -68,4 +71,13 @@ async def search_for_products_controller(
             detail="No products found matching the criteria",
         )
 
-    return [ProductResponse.from_orm(product) for product in products]
+    # Рассчитываем количество страниц
+    total_pages = (total_products + limit - 1) // limit
+
+    return {
+        "products": [ProductResponse.from_orm(product) for product in products],
+        "total_products": total_products,
+        "total_pages": total_pages,
+        "current_page": (offset // limit) + 1,
+        "limit": limit,
+    }

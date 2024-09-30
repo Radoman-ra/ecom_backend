@@ -31,7 +31,7 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
         data={"sub": user.email, "user_id": user.id}
     )
 
-    set_jwt_cookie(response, access_token, refresh_token)
+    # set_jwt_cookie(response, access_token, refresh_token)
 
     return TokenResponse(
         access_token=access_token,
