@@ -7,7 +7,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 
-env_path = Path(__file__).resolve().parents[3] / ".env"
+env_path = Path(__file__).resolve()
+while env_path.name != '.env' and env_path.parent != env_path:
+    env_path = env_path.parent
+env_path = env_path / ".env"
+
 load_dotenv(dotenv_path=env_path)
 
 MYSQL_USER = os.getenv("MYSQL_USER")

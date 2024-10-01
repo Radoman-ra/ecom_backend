@@ -1,6 +1,6 @@
 from database.database import Base, root_engine
 from database.tables import *
-from database.populators.create_tables import create_tables
+from project.app.database.create_tables import create_tables
 
 
 def drop_tables():

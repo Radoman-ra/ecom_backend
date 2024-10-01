@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 def get_user_by_token(
     authorization: str = Header(None), db: Session = Depends(get_db)
 ) -> User:
-    token = authorization.split(" ")[1]  # Assuming "Bearer <token>"
+    token = authorization.split(" ")[1]
     payload = decode_access_token(token)
     user = db.query(User).filter(User.id == payload.get("user_id")).first()
     if not user:

@@ -59,10 +59,8 @@ async def search_for_products_controller(
             Supplier.name.ilike(f"%{supplier_name}%")
         )
 
-    # Получаем общее количество продуктов без применения limit и offset
     total_products = query.count()
 
-    # Применяем offset и limit для пагинации
     products = query.offset(offset).limit(limit).all()
 
     if not products:
@@ -71,7 +69,6 @@ async def search_for_products_controller(
             detail="No products found matching the criteria",
         )
 
-    # Рассчитываем количество страниц
     total_pages = (total_products + limit - 1) // limit
 
     return {

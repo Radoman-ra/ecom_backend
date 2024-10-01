@@ -30,7 +30,7 @@ async def fetch_my_orders(
     authorization: str = Header(None),
     limit: Optional[int] = Query(10, ge=1),
     offset: Optional[int] = Query(0, ge=0),
-    status: Optional[str] = Query(None)  # New optional status filter
+    status: Optional[str] = Query(None)
 ):
     return get_orders_by_user(db, authorization, limit, offset, status)
 

@@ -88,23 +88,17 @@ def get_orders_by_user(
 ) -> Dict[str, Any]:
     user = get_user_by_token(authorization, db)
 
-    # Base query for user's orders
     query = db.query(Order).filter(Order.user_id == user.id)
-    
-    # Apply status filter if provided
+
     if status:
         query = query.filter(Order.status == status)
 
-    # Get total number of filtered orders
     total_orders = query.count()
 
-    # Calculate total pages
     total_pages = math.ceil(total_orders / limit)
-    
-    # Calculate current page
+
     current_page = (offset // limit) + 1
 
-    # Query paginated orders with offset and limit
     orders = query.offset(offset).limit(limit).all()
 
     order_responses = []
