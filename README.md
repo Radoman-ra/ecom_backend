@@ -30,9 +30,9 @@ The MySQL database should include at least five tables, with the following sugge
 1. **Users** (for storing user details)
 
 - `id` (Primary Key)
-- `username`
+- `username` (unique)
 - `password_hash`
-- `email`
+- `email` (unique)
 - `is_admin` (Boolean to denote admin users)
 
 2. **Products**
