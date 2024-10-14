@@ -1,6 +1,6 @@
-from core.security import decode_access_token
-from database.tables import User
-from dependencies.db_dependencies import get_db
+from app.core.security import decode_access_token
+from app.database.tables import User
+from app.database.database import get_db
 from fastapi import Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 

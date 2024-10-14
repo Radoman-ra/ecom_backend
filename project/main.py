@@ -1,8 +1,9 @@
 import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from routers import auth, categories, products, suppliers, orders, search
+from app.routers import auth, categories, products, suppliers, orders, search
 
 app = FastAPI()
 from fastapi.openapi.utils import get_openapi
@@ -10,6 +11,7 @@ from fastapi.openapi.utils import get_openapi
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://f663-2a02-a31a-4099-3800-389a-b448-3356-cd2f.ngrok-free.app",
 ]
 
 app.add_middleware(
@@ -36,6 +38,11 @@ app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(orders.router)
 app.include_router(search.router)
+app.mount("/static/images/1000x1000", StaticFiles(directory="static/images/1000x1000"), name="images")
+app.mount("/static/images/500x500", StaticFiles(directory="static/images/500x500"), name="images")
+app.mount("/static/images/100x100", StaticFiles(directory="static/images/100x100"), name="images")
+app.mount("/static/images/10x10", StaticFiles(directory="static/images/10x10"), name="images")
+
 
 
 def custom_openapi():

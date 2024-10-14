@@ -1,13 +1,14 @@
 from typing import List
 
-from controllers.categories_controller import (
+from app.controllers.categories_controller import (
     create_category,
     get_all_categories,
+    get_category_by_id,
     update_category,
     delete_category,
 )
-from schemas.schemas import CategoryCreate, CategoryResponse
-from dependencies.db_dependencies import get_db
+from app.schemas.schemas import CategoryCreate, CategoryResponse
+from app.database.database import get_db
 from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
@@ -50,3 +51,10 @@ async def delete_existing_category(
     authorization: str = Header(None),
 ):
     return delete_category(category_id, db, authorization)
+
+@router.get("/{category_id}", response_model=CategoryResponse)
+async def fetch_category_by_id(
+    category_id: int,
+    db: Session = Depends(get_db),
+):
+    return get_category_by_id(category_id, db)

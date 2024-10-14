@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from database.tables import User
+from app.database.tables import User
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 

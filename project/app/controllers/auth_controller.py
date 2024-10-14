@@ -1,17 +1,17 @@
-from core.security import (
+from app.core.security import (
     create_access_token,
     create_refresh_token,
     set_jwt_cookie,
     remove_jwt_cookie,
 )
-from schemas.schemas import TokenResponse, UserCreate, LoginFrom
-from database.tables import User
-from utils.utils import (
+from app.schemas.schemas import TokenResponse, UserCreate, LoginFrom
+from app.database.tables import User
+from app.utils.utils import (
     verify_password,
     get_user_by_email,
     hash_password,
 )
-from core.security import verify_refresh_token
+from app.core.security import verify_refresh_token
 from fastapi import HTTPException, status, Response
 from sqlalchemy.orm import Session
 

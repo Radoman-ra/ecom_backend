@@ -1,13 +1,13 @@
 from typing import List, Optional
-from core.security import get_user_by_token
-from utils.utils import check_admin_privileges
-from schemas.schemas import (
+from app.core.security import get_user_by_token
+from app.utils.utils import check_admin_privileges
+from app.schemas.schemas import (
     OrderCreate,
     OrderProductResponse,
     OrderResponse,
     OrderUpdate,
 )
-from database.tables import Order, Product, order_product_table
+from app.database.tables import Order, Product, order_product_table
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 import math

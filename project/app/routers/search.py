@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from dependencies.db_dependencies import get_db
-from schemas.schemas import ProductResponse
-from controllers.search_controller import search_for_products_controller
+from app.database.database import get_db
+from app.schemas.schemas import ProductResponse
+from app.controllers.search_controller import search_for_products_controller
 
 
 router = APIRouter(prefix="/api/search", tags=["search"])

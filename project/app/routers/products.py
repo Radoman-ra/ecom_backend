@@ -1,13 +1,13 @@
 from typing import List, Optional
 
-from controllers.products_controller import (
+from app.controllers.products_controller import (
     create_product,
-    get_all_products,
+    get_product_by_id,
     update_product,
     delete_product,
 )
-from schemas.schemas import ProductCreate, ProductResponse, ProductUpdate
-from dependencies.db_dependencies import get_db
+from app.schemas.schemas import ProductCreate, ProductResponse, ProductUpdate
+from app.database.database import get_db
 from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
@@ -22,15 +22,6 @@ async def create_new_product(
     authorization: str = Header(None),
 ):
     return create_product(product_data, db, authorization)
-
-
-@router.get("/", response_model=List[ProductResponse])
-async def fetch_all_products(
-    db: Session = Depends(get_db),
-    limit: Optional[int] = Query(10, ge=1, le=100),
-    offset: Optional[int] = Query(0, ge=0),
-):
-    return get_all_products(db, limit, offset)
 
 
 @router.put("/{product_id}", response_model=ProductResponse)
@@ -50,3 +41,11 @@ async def delete_existing_product(
     authorization: str = Header(None),
 ):
     return delete_product(product_id, db, authorization)
+
+@router.get("/{product_id}", response_model=ProductResponse)
+async def get_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+):
+    return get_product_by_id(product_id, db)
+

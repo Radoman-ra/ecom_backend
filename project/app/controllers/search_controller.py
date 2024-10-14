@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from schemas.schemas import ProductResponse
-from database.tables import Product, Category, Supplier
+from app.schemas.schemas import ProductResponse
+from app.database.tables import Product, Category, Supplier
 from datetime import datetime
 
 async def search_for_products_controller(

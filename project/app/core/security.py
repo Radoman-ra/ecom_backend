@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from database.tables import User
+from app.database.tables import User
 from fastapi import HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError

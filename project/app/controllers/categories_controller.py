@@ -1,7 +1,7 @@
-from core.security import get_user_by_token
-from utils.utils import check_admin_privileges
-from schemas.schemas import CategoryCreate, CategoryResponse
-from database.tables import Category
+from app.core.security import get_user_by_token
+from app.utils.utils import check_admin_privileges
+from app.schemas.schemas import CategoryCreate, CategoryResponse
+from app.database.tables import Category
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -73,3 +73,15 @@ def delete_category(
 
     db.delete(category)
     db.commit()
+    
+def get_category_by_id(
+    category_id: int, db: Session
+) -> CategoryResponse:
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found",
+        )
+    return CategoryResponse.from_orm(category)
+

@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from fastapi import UploadFile
 from pydantic import BaseModel, EmailStr
 
 
@@ -56,6 +57,7 @@ class CategoryResponse(BaseModel):
         from_attributes = True
 
 
+    
 class ProductCreate(BaseModel):
     name: str
     description: Optional[str] = None
@@ -63,6 +65,7 @@ class ProductCreate(BaseModel):
     category_id: int
     supplier_id: int
     quantity: int
+    photo: UploadFile = None
 
 
 class ProductUpdate(BaseModel):
@@ -82,6 +85,7 @@ class ProductResponse(BaseModel):
     category_id: int
     supplier_id: int
     quantity: int
+    photo_path: Optional[str]
 
     class Config:
         from_attributes = True

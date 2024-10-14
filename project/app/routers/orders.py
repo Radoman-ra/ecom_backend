@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Optional
 
-from controllers.orders_controller import (
+from app.controllers.orders_controller import (
     create_order,
     get_all_orders,
     get_orders_by_user,
     update_order,
     delete_order,
 )
-from schemas.schemas import OrderCreate, OrderResponse, OrderUpdate
-from dependencies.db_dependencies import get_db
+from app.schemas.schemas import OrderCreate, OrderResponse, OrderUpdate
+from app.database.database import get_db
 from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 

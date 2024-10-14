@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Header, Response
 from sqlalchemy.orm import Session
-from schemas.schemas import TokenResponse, UserCreate, LoginFrom
-from dependencies.db_dependencies import get_db
-from controllers.auth_controller import (
+from app.schemas.schemas import TokenResponse, UserCreate, LoginFrom
+from app.database.database import get_db
+from app.controllers.auth_controller import (
     login_user,
     logout_user,
     refresh_access_token,

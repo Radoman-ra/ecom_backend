@@ -21,7 +21,7 @@ async def seed_orders(db: Session, num_orders: int):
         order = Order(
             user_id=fake.random_element(elements=users),
             status=fake.random_element(
-                elements=["Pending", "Shipped", "Delivered", "Cancelled"]
+                elements=["pending", "shipped", "delivered", "cancelled"]
             ),
         )
         db.add(order)

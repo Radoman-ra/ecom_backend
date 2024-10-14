@@ -1,7 +1,7 @@
-from core.security import get_user_by_token
-from utils.utils import check_admin_privileges
-from schemas.schemas import SupplierCreate, SupplierResponse, SupplierUpdate
-from database.tables import Supplier
+from app.core.security import get_user_by_token
+from app.utils.utils import check_admin_privileges
+from app.schemas.schemas import SupplierCreate, SupplierResponse, SupplierUpdate
+from app.database.tables import Supplier
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -77,3 +77,14 @@ def delete_supplier(
 
     db.delete(supplier)
     db.commit()
+
+def get_supplier_by_id(
+    supplier_id: int, db: Session
+) -> SupplierResponse:
+    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    if not supplier:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Supplier not found",
+        )
+    return SupplierResponse.from_orm(supplier)
