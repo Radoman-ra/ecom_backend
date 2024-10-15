@@ -1,12 +1,15 @@
 import os
 from pathlib import Path
-
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-load_dotenv()
+env_path = Path(__file__).resolve()
+while env_path.name != '.env' and env_path.parent != env_path:
+    env_path = env_path.parent
+env_path = env_path / ".env"
+load_dotenv(dotenv_path=env_path)
 
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
@@ -27,7 +30,6 @@ RootSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=root_eng
 
 Base = declarative_base()
 
-
 def get_db():
     print(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_ROOT_PASSWORD)
     db = SessionLocal()
@@ -35,7 +37,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 def get_root_db():
     print(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_ROOT_PASSWORD)
