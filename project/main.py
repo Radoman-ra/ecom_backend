@@ -11,7 +11,7 @@ from fastapi.openapi.utils import get_openapi
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://f663-2a02-a31a-4099-3800-389a-b448-3356-cd2f.ngrok-free.app",
+    "https://ecomfrontend-production.up.railway.app"
 ]
 
 app.add_middleware(
