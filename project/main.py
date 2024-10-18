@@ -1,3 +1,4 @@
+import os
 import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,11 +8,14 @@ from app.routers import auth, categories, products, suppliers, orders, search
 
 app = FastAPI()
 from fastapi.openapi.utils import get_openapi
+from dotenv import load_dotenv
+from pathlib import Path
+
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://ecomfrontend-production.up.railway.app"
+    os.getenv("FRONTEND_URL")
 ]
 
 app.add_middleware(
