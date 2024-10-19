@@ -41,8 +41,8 @@ def login_via_google(request: Request):
 
 
 async def handle_google_callback(request: Request, db: Session):
-    token = oauth.google.authorize_access_token(request)
-    user_info = oauth.google.parse_id_token(request, token)
+    token = await oauth.google.authorize_access_token(request)
+    user_info = await oauth.google.parse_id_token(request, token)
 
     user = await get_user_by_email(db, user_info['email'])
     
