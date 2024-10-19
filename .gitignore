@@ -193,14 +193,4 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-100x100/*
-!100x100/.gitkeep
-
-500x500/*
-!500x500/.gitkeep
-
-1000x1000/*
-!1000x1000/.gitkeep
-
-10x10/*
-!10x10/.gitkeep
+static/
