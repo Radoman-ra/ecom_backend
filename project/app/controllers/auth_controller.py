@@ -43,33 +43,30 @@ def login_via_google(request: Request):
 
 
 async def handle_google_callback(request: Request, db: Session):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = await oauth.google.parse_id_token(request, token)
+    token = await oauth.google.authorize_access_token(request)
+    user_info = await oauth.google.parse_id_token(request, token)
 
-        user = await get_user_by_email(db, user_info['email'])
-        
-        if not user:
-            user = User(
-                username=user_info['name'],
-                email=user_info['email'],
-                password_hash=None,
-                user_type=UserType.google
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
-        refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
+    user = await get_user_by_email(db, user_info['email'])
+    
+    if not user:
+        user = User(
+            username=user_info['name'],
+            email=user_info['email'],
+            password_hash=None,
+            user_type=UserType.google
         )
-    except RuntimeError as e:
-        print(e)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
+    refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+    )
 
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):

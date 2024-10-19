@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 async def login_with_google(request: Request):
     return await login_via_google(request)
 
-@router.get("/google/callback")
+@router.get("/google/callback", response_model=UserInfo)
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     return await  handle_google_callback(request, db)
 
