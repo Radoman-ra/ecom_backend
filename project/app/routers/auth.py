@@ -14,6 +14,7 @@ from app.controllers.auth_controller import (
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+
 @router.get("/login/google")
 async def login_with_google(request: Request):
     return await login_via_google(request)

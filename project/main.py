@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.routers import auth, categories, products, suppliers, orders, search
 
@@ -26,6 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "default_secret"),
+)
+
 @app.middleware("http")
 async def log_time_used(request: Request, call_next):
     start_time = time.time()
@@ -34,7 +40,6 @@ async def log_time_used(request: Request, call_next):
     duration *= 1000
     print(f"Request to {request.url.path} took {duration:.4f} ms")
     return response
-
 
 app.include_router(auth.router)
 app.include_router(suppliers.router)
@@ -46,8 +51,6 @@ app.mount("/static/images/1000x1000", StaticFiles(directory="static/images/1000x
 app.mount("/static/images/500x500", StaticFiles(directory="static/images/500x500"), name="images")
 app.mount("/static/images/100x100", StaticFiles(directory="static/images/100x100"), name="images")
 app.mount("/static/images/10x10", StaticFiles(directory="static/images/10x10"), name="images")
-
-
 
 def custom_openapi():
     if app.openapi_schema:
@@ -92,6 +95,5 @@ def custom_openapi():
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
-
 
 app.openapi = custom_openapi
