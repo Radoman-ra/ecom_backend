@@ -6,7 +6,7 @@ from app.core.security import (
     remove_jwt_cookie,
 )
 from app.schemas.schemas import TokenResponse, UserCreate, LoginFrom
-from app.database.tables import User
+from app.database.tables import User, UserType
 from app.utils.utils import (
     verify_password,
     get_user_by_email,
@@ -49,7 +49,7 @@ def handle_google_callback(request: Request, db: Session):
         user = User(
             username=user_info['name'],
             email=user_info['email'],
-            password_hash=None
+            password_hash=None,
             user_type=UserType.google
             
             
