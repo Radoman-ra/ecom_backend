@@ -69,10 +69,7 @@ async def handle_google_callback(request: Request, db: Session):
             token_type="bearer",
         )
     except RuntimeError as e:
-        if "jwks_uri" in str(e):
-            raise HTTPException(status_code=500, detail="Internal Server Error: JWKS URI is missing.")
-        else:
-            raise HTTPException(status_code=400, detail="Bad Request: Unable to process token.")
+        print(e)
 
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
