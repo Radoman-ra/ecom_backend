@@ -32,6 +32,8 @@ oauth.register(
     authorize_params=None,
     access_token_url='https://accounts.google.com/o/oauth2/token',
     access_token_params=None,
+    api_base_url='https://www.googleapis.com/oauth2/v1/',
+    userinfo_endpoint='https://www.googleapis.com/oauth2/v3/userinfo',
     client_kwargs={'scope': 'openid email profile'},
 )
 
@@ -41,30 +43,36 @@ def login_via_google(request: Request):
 
 
 async def handle_google_callback(request: Request, db: Session):
-    token = await oauth.google.authorize_access_token(request)
-    user_info = await oauth.google.parse_id_token(request, token)
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user_info = await oauth.google.parse_id_token(request, token)
 
-    user = await get_user_by_email(db, user_info['email'])
-    
-    if not user:
-        user = User(
-            username=user_info['name'],
-            email=user_info['email'],
-            password_hash=None,
-            user_type=UserType.google
+        user = await get_user_by_email(db, user_info['email'])
+        
+        if not user:
+            user = User(
+                username=user_info['name'],
+                email=user_info['email'],
+                password_hash=None,
+                user_type=UserType.google
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
+        refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
-    refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-    )
+    except RuntimeError as e:
+        if "jwks_uri" in str(e):
+            raise HTTPException(status_code=500, detail="Internal Server Error: JWKS URI is missing.")
+        else:
+            raise HTTPException(status_code=400, detail="Bad Request: Unable to process token.")
 
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
