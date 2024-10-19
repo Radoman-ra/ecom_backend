@@ -10,7 +10,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import enum
+from sqlalchemy import Enum
 
+class UserType(enum.Enum):
+    google = "google"
+    default = "default"
+    
 order_product_table = Table(
     "order_product",
     Base.metadata,
@@ -26,8 +32,11 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True, unique=True)
     username = Column(String(50), unique=True, index=True)
     email = Column(String(100), unique=True, index=True)
-    password_hash = Column(String(128))
+    password_hash = Column(String(128), nullable=True)
     is_admin = Column(Boolean, default=False)
+    avatar_path = Column(String(200), nullable=True, unique=True)
+
+    user_type = Column(Enum(UserType), default=UserType.default)
 
     orders = relationship("Order", back_populates="user")
 

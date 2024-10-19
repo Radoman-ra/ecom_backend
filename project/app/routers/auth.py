@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, Header, Response
+from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.orm import Session
 from app.schemas.schemas import TokenResponse, UserCreate, LoginFrom
 from app.database.database import get_db
 from app.controllers.auth_controller import (
+    handle_google_callback,
     login_user,
+    login_via_google,
     logout_user,
     refresh_access_token,
     register_new_user,
@@ -12,6 +14,13 @@ from app.controllers.auth_controller import (
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+@router.get("/login/google")
+async def login_with_google(request: Request):
+    return login_via_google(request)
+
+@router.get("/google/callback", response_model=TokenResponse)
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    return handle_google_callback(request, db)
 
 @router.post("/login", response_model=TokenResponse)
 async def login(

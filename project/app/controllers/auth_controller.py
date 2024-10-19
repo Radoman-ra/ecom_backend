@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -14,7 +15,57 @@ from app.utils.utils import (
 from app.core.security import verify_refresh_token
 from fastapi import HTTPException, status, Response
 from sqlalchemy.orm import Session
+from authlib.integrations.starlette_client import OAuth
+from fastapi import Request
+import os
+from pathlib import Path
 
+env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
+oauth = OAuth()
+oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    access_token_params=None,
+    client_kwargs={'scope': 'openid email profile'},
+)
+
+def login_via_google(request: Request):
+    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
+    return oauth.google.authorize_redirect(request, redirect_uri)
+
+
+def handle_google_callback(request: Request, db: Session):
+    token = oauth.google.authorize_access_token(request)
+    user_info = oauth.google.parse_id_token(request, token)
+
+    user = get_user_by_email(db, user_info['email'])
+    if not user:
+        user = User(
+            username=user_info['name'],
+            email=user_info['email'],
+            password_hash=None
+            user_type=UserType.google
+            
+            
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
+    refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+    )
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
     user = get_user_by_email(db, form_data.email)
