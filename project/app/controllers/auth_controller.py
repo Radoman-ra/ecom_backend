@@ -40,19 +40,18 @@ def login_via_google(request: Request):
     return oauth.google.authorize_redirect(request, redirect_uri)
 
 
-def handle_google_callback(request: Request, db: Session):
+async def handle_google_callback(request: Request, db: Session):
     token = oauth.google.authorize_access_token(request)
     user_info = oauth.google.parse_id_token(request, token)
 
-    user = get_user_by_email(db, user_info['email'])
+    user = await get_user_by_email(db, user_info['email'])
+    
     if not user:
         user = User(
             username=user_info['name'],
             email=user_info['email'],
             password_hash=None,
             user_type=UserType.google
-            
-            
         )
         db.add(user)
         db.commit()
@@ -66,6 +65,7 @@ def handle_google_callback(request: Request, db: Session):
         refresh_token=refresh_token,
         token_type="bearer",
     )
+
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
     user = get_user_by_email(db, form_data.email)
