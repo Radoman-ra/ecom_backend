@@ -6,13 +6,31 @@ from ..utils.utils import get_user_by_email
 from app.core.security import get_user_by_token, verify_access_token
 from pathlib import Path
 from shutil import copyfileobj
+import imghdr
 
 AVATAR_FOLDER = Path(__file__).resolve().parent.parent / "static" / "avatars"
 
-def create_avatar_file_path(user_id: int, filename: str):
-    file_extension = filename.split(".")[-1]
+ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "bmp"}
+
+def create_avatar_file_path(user_id: int, file_extension: str):
     return AVATAR_FOLDER / f"{user_id}.{file_extension}"
 
+def validate_image(file: UploadFile):
+
+    file_extension = file.filename.split(".")[-1].lower()
+    if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file extension. Allowed extensions: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
+        )
+    
+    image_type = imghdr.what(file.file)
+    if image_type not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid image type. Expected types: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
+        )
+    return file_extension
 
 async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
 
@@ -24,19 +42,22 @@ async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
             detail="User not found"
         )
 
-    avatar_path = create_avatar_file_path(user.id, file.filename)
+    file_extension = validate_image(file)
+
+    avatar_path = create_avatar_file_path(user.id, file_extension)
 
     AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
+
     with avatar_path.open("wb") as buffer:
+        file.file.seek(0)
         copyfileobj(file.file, buffer)
 
-    avatar_url = f"/static/avatars/{user.id}.{file.filename.split('.')[-1]}"
+    avatar_url = f"/static/avatars/{user.id}.{file_extension}"
     user.avatar_path = avatar_url
     db.commit()
     db.refresh(user)
 
     return {"msg": "Avatar uploaded successfully", "avatar_url": avatar_url}
-
 
 
 async def get_user_avatar(db: Session, authorization: str):
@@ -57,7 +78,6 @@ async def get_user_avatar(db: Session, authorization: str):
         )
 
     return Response(content=avatar_file_path.read_bytes(), media_type="image/jpeg")
-
 
 
 async def delete_user_avatar(db: Session, authorization: str):
