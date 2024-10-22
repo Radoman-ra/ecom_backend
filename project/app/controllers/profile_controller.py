@@ -30,11 +30,13 @@ async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
     with avatar_path.open("wb") as buffer:
         copyfileobj(file.file, buffer)
 
-    user.avatar_path = str(avatar_path)
+    avatar_url = f"/static/avatars/{user.id}.{file.filename.split('.')[-1]}"
+    user.avatar_path = avatar_url
     db.commit()
     db.refresh(user)
 
-    return {"msg": "Avatar uploaded successfully", "avatar_url": str(avatar_path)}
+    return {"msg": "Avatar uploaded successfully", "avatar_url": avatar_url}
+
 
 
 async def get_user_avatar(db: Session, authorization: str):
@@ -55,6 +57,7 @@ async def get_user_avatar(db: Session, authorization: str):
         )
 
     return Response(content=avatar_file_path.read_bytes(), media_type="image/jpeg")
+
 
 
 async def delete_user_avatar(db: Session, authorization: str):
