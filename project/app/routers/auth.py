@@ -29,7 +29,7 @@ async def login(
     db: Session = Depends(get_db),
     response: Response = Response(),
 ):
-    return await  login_user(form_data, db, response)
+    return  login_user(form_data, db, response)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -38,7 +38,7 @@ async def refresh_token_auth(
     refresh_token: str,
     db: Session = Depends(get_db),
 ):
-    return await  refresh_access_token(response, refresh_token, db)
+    return  refresh_access_token(response, refresh_token, db)
 
 
 @router.post(
@@ -47,7 +47,7 @@ async def refresh_token_auth(
     response_description="Successfully logged out",
 )
 async def logout(response: Response, authorization: str = Header(None)):
-    return await  logout_user(response, authorization)
+    return  logout_user(response, authorization)
 
 
 @router.post("/register", response_model=UserCreate)
