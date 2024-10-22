@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from fastapi.responses import RedirectResponse
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -41,24 +42,15 @@ def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     return oauth.google.authorize_redirect(request, redirect_uri)
 
-
-import logging
-
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-async def handle_google_callback(request: Request, db: Session):
+async def handle_google_callback(request: Request, db: Session, response: Response):
     try:
         token = await oauth.google.authorize_access_token(request)
-        logger.info(f"Google Token: {token}")
-
+        
         nonce = token.get('userinfo', {}).get('nonce')
         if not nonce:
             raise HTTPException(status_code=400, detail="Missing nonce in token response")
 
         user_info = await oauth.google.parse_id_token(token, nonce=nonce)
-        logger.info(f"Google User Info: {user_info}")
 
         name = user_info.get('name')
         if not name:
@@ -80,16 +72,14 @@ async def handle_google_callback(request: Request, db: Session):
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
-        return TokenResponseGoogle(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
-            email=user_info['email'],
-            name=name
-        )
+        set_jwt_cookie(response, access_token, refresh_token)
+
+        frontend_url = os.getenv("FRONTEND_URL")
+        return RedirectResponse(frontend_url)
+    
     except Exception as e:
-        logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+
 
 
 
