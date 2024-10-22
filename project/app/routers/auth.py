@@ -52,4 +52,4 @@ async def logout(response: Response, authorization: str = Header(None)):
 
 @router.post("/register", response_model=UserCreate)
 async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    return await  register_new_user(user_data, db)
+    return  register_new_user(user_data, db)
