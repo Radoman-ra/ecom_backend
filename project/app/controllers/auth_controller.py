@@ -5,7 +5,7 @@ from app.core.security import (
     set_jwt_cookie,
     remove_jwt_cookie,
 )
-from app.schemas.schemas import TokenResponse, UserCreate, LoginFrom
+from app.schemas.schemas import TokenResponse, TokenResponseGoogle, UserCreate, LoginFrom
 from app.database.tables import User, UserType
 from app.utils.utils import (
     verify_password,
@@ -76,7 +76,7 @@ async def handle_google_callback(request: Request, db: Session):
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
-        return TokenResponse(
+        return TokenResponseGoogle(
             access_token=access_token,
             refresh_token=refresh_token,
             email=user_info['email'],
