@@ -50,24 +50,19 @@ logger = logging.getLogger(__name__)
 
 async def handle_google_callback(request: Request, db: Session):
     try:
-        # Get the access token from Google
         token = await oauth.google.authorize_access_token(request)
         logger.info(f"Google Token: {token}")
 
-        # Extract the nonce from the token
         nonce = token.get('userinfo', {}).get('nonce')
         if not nonce:
             raise HTTPException(status_code=400, detail="Missing nonce in token response")
 
-        # Parse the ID token with the nonce
         user_info = await oauth.google.parse_id_token(token, nonce=nonce)
         logger.info(f"Google User Info: {user_info}")
 
-        # Check if user exists in the database
-        user = await get_user_by_email(db, user_info['email'])
+        user = get_user_by_email(db, user_info['email'])
 
         if not user:
-            # If the user does not exist, create a new user
             user = User(
                 username=user_info['name'],
                 email=user_info['email'],
@@ -78,7 +73,6 @@ async def handle_google_callback(request: Request, db: Session):
             db.commit()
             db.refresh(user)
 
-        # Create access and refresh tokens
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
