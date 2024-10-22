@@ -50,15 +50,19 @@ logger = logging.getLogger(__name__)
 
 async def handle_google_callback(request: Request, db: Session):
     try:
+        # Try fetching the Google OAuth token
         token = await oauth.google.authorize_access_token(request)
         logger.info(f"Google Token: {token}")
 
+        # Try parsing the ID token from Google
         user_info = await oauth.google.parse_id_token(token)
         logger.info(f"Google User Info: {user_info}")
 
+        # Check if user exists in DB
         user = await get_user_by_email(db, user_info['email'])
 
         if not user:
+            # Create a new user if none exists
             user = User(
                 username=user_info['name'],
                 email=user_info['email'],
@@ -78,7 +82,7 @@ async def handle_google_callback(request: Request, db: Session):
             token_type="bearer",
         )
     except Exception as e:
-        logger.error(f"Error during Google OAuth callback: {str(e)}")
+        logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)  # Log full exception info
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
 
 
