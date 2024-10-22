@@ -76,10 +76,10 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
-        set_jwt_cookie(response, access_token, refresh_token)
+        frontend_callback_url = os.getenv("FRONTEND_URL") + "/auth/callback"
 
-        frontend_url = os.getenv("FRONTEND_URL")
-        return RedirectResponse(frontend_url)
+        redirect_url = f"{frontend_callback_url}?access_token={access_token}&refresh_token={refresh_token}"
+        return RedirectResponse(redirect_url)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
