@@ -2,7 +2,7 @@ import os
 from fastapi import HTTPException, status, UploadFile, Response
 from sqlalchemy.orm import Session
 from app.database.tables import User
-from ..utils.utils import get_user_by_id
+from ..utils.utils import get_user_by_email
 from app.core.security import verify_access_token
 from pathlib import Path
 from shutil import copyfileobj
@@ -16,7 +16,7 @@ def create_avatar_file_path(user_id: int, filename: str):
 
 async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
     token_data = verify_access_token(authorization)
-    user = get_user_by_id(db, token_data["user_id"])
+    user = get_user_by_email(db, token_data["email"])
 
     if not user:
         raise HTTPException(
@@ -39,7 +39,7 @@ async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
 
 async def get_user_avatar(db: Session, authorization: str):
     token_data = verify_access_token(authorization)
-    user = get_user_by_id(db, token_data["user_id"])
+    user = get_user_by_email(db, token_data["email"])
 
     if not user or not user.avatar_path:
         raise HTTPException(
@@ -59,7 +59,7 @@ async def get_user_avatar(db: Session, authorization: str):
 
 async def delete_user_avatar(db: Session, authorization: str):
     token_data = verify_access_token(authorization)
-    user = get_user_by_id(db, token_data["user_id"])
+    user = get_user_by_email(db, token_data["email"])
 
     if not user or not user.avatar_path:
         raise HTTPException(
