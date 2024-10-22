@@ -50,19 +50,24 @@ logger = logging.getLogger(__name__)
 
 async def handle_google_callback(request: Request, db: Session):
     try:
-        # Try fetching the Google OAuth token
+        # Get the access token from Google
         token = await oauth.google.authorize_access_token(request)
         logger.info(f"Google Token: {token}")
 
-        # Try parsing the ID token from Google
-        user_info = await oauth.google.parse_id_token(token)
+        # Extract the nonce from the token
+        nonce = token.get('userinfo', {}).get('nonce')
+        if not nonce:
+            raise HTTPException(status_code=400, detail="Missing nonce in token response")
+
+        # Parse the ID token with the nonce
+        user_info = await oauth.google.parse_id_token(token, nonce=nonce)
         logger.info(f"Google User Info: {user_info}")
 
-        # Check if user exists in DB
+        # Check if user exists in the database
         user = await get_user_by_email(db, user_info['email'])
 
         if not user:
-            # Create a new user if none exists
+            # If the user does not exist, create a new user
             user = User(
                 username=user_info['name'],
                 email=user_info['email'],
@@ -73,6 +78,7 @@ async def handle_google_callback(request: Request, db: Session):
             db.commit()
             db.refresh(user)
 
+        # Create access and refresh tokens
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
@@ -82,8 +88,9 @@ async def handle_google_callback(request: Request, db: Session):
             token_type="bearer",
         )
     except Exception as e:
-        logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)  # Log full exception info
+        logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+
 
 
 
