@@ -79,13 +79,14 @@ async def handle_google_callback(request: Request, db: Session):
         return TokenResponseGoogle(
             access_token=access_token,
             refresh_token=refresh_token,
-            email=user_info['email'],
-            name=user_info.get('name'),
             token_type="bearer",
+            email=user_info['email'],
+            name=user_info.get('name')
         )
     except Exception as e:
         logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+
 
 
 
