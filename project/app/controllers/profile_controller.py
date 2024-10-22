@@ -2,7 +2,7 @@ import os
 from fastapi import HTTPException, status, UploadFile, Response
 from sqlalchemy.orm import Session
 from app.database.tables import User
-from app.utils.utils import get_user_by_id
+from ..utils.utils import get_user_by_id
 from app.core.security import verify_access_token
 from pathlib import Path
 from shutil import copyfileobj
