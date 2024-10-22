@@ -60,11 +60,15 @@ async def handle_google_callback(request: Request, db: Session):
         user_info = await oauth.google.parse_id_token(token, nonce=nonce)
         logger.info(f"Google User Info: {user_info}")
 
+        name = user_info.get('name')
+        if not name:
+            name = user_info['email']
+
         user = get_user_by_email(db, user_info['email'])
 
         if not user:
             user = User(
-                username=user_info.get('name', user_info['email']),
+                username=name,
                 email=user_info['email'],
                 password_hash=None,
                 user_type=UserType.google
@@ -81,11 +85,12 @@ async def handle_google_callback(request: Request, db: Session):
             refresh_token=refresh_token,
             token_type="bearer",
             email=user_info['email'],
-            name=user_info.get('name')
+            name=name
         )
     except Exception as e:
         logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+
 
 
 

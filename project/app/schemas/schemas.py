@@ -17,7 +17,8 @@ class TokenResponseGoogle(BaseModel):
     refresh_token: str
     token_type: str
     email: str
-    name: str = None
+    name: Optional[str] = None
+
 
 
 class LoginFrom(BaseModel):
