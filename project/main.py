@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.routers import auth, categories, products, suppliers, orders, search
+from app.routers import auth, categories, products, suppliers, orders, search, profile
 
 app = FastAPI()
 from fastapi.openapi.utils import get_openapi
@@ -47,6 +47,7 @@ app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(orders.router)
 app.include_router(search.router)
+app.include_router(profile.router)
 app.mount("/static/images/1000x1000", StaticFiles(directory="static/images/1000x1000"), name="images")
 app.mount("/static/images/500x500", StaticFiles(directory="static/images/500x500"), name="images")
 app.mount("/static/images/100x100", StaticFiles(directory="static/images/100x100"), name="images")
