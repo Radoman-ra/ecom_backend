@@ -11,6 +11,13 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
+    
+class TokenResponseGoogle(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    email: str
+    name: str = None
 
 
 class LoginFrom(BaseModel):
