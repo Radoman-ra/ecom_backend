@@ -42,6 +42,10 @@ def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     return oauth.google.authorize_redirect(request, redirect_uri)
 
+import os
+from fastapi import HTTPException, status, Response
+from fastapi.responses import RedirectResponse
+
 async def handle_google_callback(request: Request, db: Session, response: Response):
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -79,12 +83,6 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
     
     except Exception as e:
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
-
-
-
-
-
-
 
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
