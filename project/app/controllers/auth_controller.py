@@ -64,7 +64,7 @@ async def handle_google_callback(request: Request, db: Session):
 
         if not user:
             user = User(
-                username=user_info['name'],
+                username=user_info.get('name', user_info['email']),
                 email=user_info['email'],
                 password_hash=None,
                 user_type=UserType.google
@@ -84,6 +84,7 @@ async def handle_google_callback(request: Request, db: Session):
     except Exception as e:
         logger.error(f"Error during Google OAuth callback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+
 
 
 
