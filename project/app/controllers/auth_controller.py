@@ -29,44 +29,58 @@ oauth.register(
     client_id=os.getenv('GOOGLE_CLIENT_ID'),
     client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
     authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
-    authorize_params=None,
     access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
     api_base_url='https://www.googleapis.com/oauth2/v1/',
     userinfo_endpoint='https://www.googleapis.com/oauth2/v3/userinfo',
     client_kwargs={'scope': 'openid email profile'},
+    jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
+
 
 def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     return oauth.google.authorize_redirect(request, redirect_uri)
 
 
+import logging
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 async def handle_google_callback(request: Request, db: Session):
-    token = await oauth.google.authorize_access_token(request)
-    user_info = await oauth.google.parse_id_token(request, token)
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        logger.info(f"Google Token: {token}")
 
-    user = await get_user_by_email(db, user_info['email'])
-    
-    if not user:
-        user = User(
-            username=user_info['name'],
-            email=user_info['email'],
-            password_hash=None,
-            user_type=UserType.google
+        user_info = await oauth.google.parse_id_token(token)
+        logger.info(f"Google User Info: {user_info}")
+
+        user = await get_user_by_email(db, user_info['email'])
+
+        if not user:
+            user = User(
+                username=user_info['name'],
+                email=user_info['email'],
+                password_hash=None,
+                user_type=UserType.google
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
+        refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    except Exception as e:
+        logger.error(f"Error during Google OAuth callback: {str(e)}")
+        raise HTTPException(status_code=500, detail="Google OAuth callback failed")
 
-    access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
-    refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-    )
 
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
