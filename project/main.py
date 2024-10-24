@@ -62,7 +62,6 @@ app.include_router(orders.router)
 app.include_router(search.router)
 app.include_router(profile.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/static/images", StaticFiles(directory="static"), name="images")
 
 def custom_openapi():
     if app.openapi_schema:
