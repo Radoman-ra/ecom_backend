@@ -65,7 +65,6 @@ app.mount("/static/images/1000x1000", StaticFiles(directory="static/images/1000x
 app.mount("/static/images/500x500", StaticFiles(directory="static/images/500x500"), name="images")
 app.mount("/static/images/100x100", StaticFiles(directory="static/images/100x100"), name="images")
 app.mount("/static/images/10x10", StaticFiles(directory="static/images/10x10"), name="images")
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 def custom_openapi():
