@@ -1,41 +1,37 @@
 import os
-from fastapi import HTTPException, status, UploadFile, Response
+from fastapi import HTTPException, Response, status, UploadFile, Depends
 from sqlalchemy.orm import Session
 from app.database.tables import User
-from ..utils.utils import get_user_by_email
-from app.core.security import get_user_by_token, verify_access_token
+from app.core.security import get_user_by_token
 from pathlib import Path
 from shutil import copyfileobj
 import imghdr
 
 AVATAR_FOLDER = Path(__file__).resolve().parent.parent / "static" / "avatars"
 
-ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "bmp"}
+ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 def create_avatar_file_path(user_id: int, file_extension: str):
     return AVATAR_FOLDER / f"{user_id}.{file_extension}"
 
 def validate_image(file: UploadFile):
-
     file_extension = file.filename.split(".")[-1].lower()
     if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file extension. Allowed extensions: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
+            detail=f"Unsupported file extension. Allowed: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
         )
     
     image_type = imghdr.what(file.file)
     if image_type not in ALLOWED_IMAGE_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid image type. Expected types: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
+            detail="Invalid image type."
         )
     return file_extension
 
 async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
-
     user = get_user_by_token(authorization, db)
-
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -44,19 +40,17 @@ async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
 
     file_extension = validate_image(file)
 
-    avatar_path = create_avatar_file_path(user.id, file_extension)
-
+    avatar_path = AVATAR_FOLDER / f"{user.id}.{file_extension}"
     AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
 
     with avatar_path.open("wb") as buffer:
         file.file.seek(0)
         copyfileobj(file.file, buffer)
-
+    
     avatar_url = f"/static/avatars/{user.id}.{file_extension}"
     user.avatar_path = avatar_url
     db.commit()
-    db.refresh(user)
-
+    
     return {"msg": "Avatar uploaded successfully", "avatar_url": avatar_url}
 
 
