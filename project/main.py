@@ -41,6 +41,19 @@ async def log_time_used(request: Request, call_next):
     print(f"Request to {request.url.path} took {duration:.4f} ms")
     return response
 
+directories = [
+    "static/avatars",
+    "static/images/10x10",
+    "static/images/100x100",
+    "static/images/500x500",
+    "static/images/1000x1000",
+]
+
+for directory in directories:
+    path = Path(directory)
+    if not path.exists():
+        path.mkdir(parents=True)
+        
 app.include_router(auth.router)
 app.include_router(suppliers.router)
 app.include_router(categories.router)
