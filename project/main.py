@@ -16,8 +16,11 @@ env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 origins = [
-    os.getenv("FRONTEND_URL")
+    os.getenv("FRONTEND_URL"),
+    os.getenv("FRONTEND_URL_2")
 ]
+print(os.getenv("FRONTEND_URL"))
+print(os.getenv("FRONTEND_URL_2"))
 
 app.add_middleware(
     CORSMiddleware,
