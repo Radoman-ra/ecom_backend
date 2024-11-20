@@ -1,4 +1,5 @@
 import os
+import uuid
 from fastapi import HTTPException, Response, status, UploadFile, Depends
 from sqlalchemy.orm import Session
 from app.database.tables import User
@@ -7,9 +8,11 @@ from pathlib import Path
 from shutil import copyfileobj
 import imghdr
 
-AVATAR_FOLDER = Path(__file__).resolve().parent.parent / "static" / "avatars"
+AVATAR_FOLDER = Path(__file__).resolve().parent.parent.parent / "static" / "avatars"
 
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
+
+random_hash = uuid.uuid4().hex
 
 def create_avatar_file_path(user_id: int, file_extension: str):
     return AVATAR_FOLDER / f"{user_id}.{file_extension}"
@@ -40,14 +43,14 @@ async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
 
     file_extension = validate_image(file)
 
-    avatar_path = AVATAR_FOLDER / f"{user.id}.{file_extension}"
+    avatar_path = AVATAR_FOLDER / f"{random_hash}.{file_extension}"
     AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
 
     with avatar_path.open("wb") as buffer:
         file.file.seek(0)
         copyfileobj(file.file, buffer)
     
-    avatar_url = f"/static/avatars/{user.id}.{file_extension}"
+    avatar_url = f"{random_hash}.{file_extension}"
     user.avatar_path = avatar_url
     db.commit()
     
@@ -64,14 +67,16 @@ async def get_user_avatar(db: Session, authorization: str):
             detail="Avatar not found"
         )
 
-    avatar_file_path = Path(user.avatar_path)
+    avatar_file_path = AVATAR_FOLDER / f"{user.avatar_path}"
+    print(avatar_file_path)
     if not avatar_file_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Avatar file does not exist"
         )
 
-    return Response(content=avatar_file_path.read_bytes(), media_type="image/jpeg")
+    return {"avatar_url": user.avatar_path}
+    # return Response(content=avatar_file_path.read_bytes(), media_type="image/jpeg")
 
 
 async def delete_user_avatar(db: Session, authorization: str):

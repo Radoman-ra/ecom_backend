@@ -6,7 +6,6 @@ from app.controllers.profile_controller import (
     get_user_avatar,
     delete_user_avatar
 )
-from app.schemas.schemas import UserInfo
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -18,14 +17,12 @@ async def upload_avatar(
 ):
     return await upload_user_avatar(file, db, authorization)
 
-
 @router.get("/avatar")
 async def fetch_avatar(
     db: Session = Depends(get_db),
     authorization: str = Header(None)
 ):
     return await get_user_avatar(db, authorization)
-
 
 @router.delete("/avatar")
 async def remove_avatar(
