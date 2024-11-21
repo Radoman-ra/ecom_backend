@@ -60,9 +60,15 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
         if not name:
             name = user_info['email']
 
-        user = get_user_by_email(db, user_info['email'])
+        existing_user = get_user_by_email(db, user_info['email'])
+        if existing_user:
+            if existing_user.user_type != UserType.google:
+                raise HTTPException(
+                    status_code=400,
+                    detail="User with this email already registered via another method"
+                )
 
-        if not user:
+        if not existing_user:
             user = User(
                 username=name,
                 email=user_info['email'],
@@ -72,6 +78,8 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
             db.add(user)
             db.commit()
             db.refresh(user)
+        else:
+            user = existing_user
 
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
@@ -81,8 +89,11 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
         redirect_url = f"{frontend_callback_url}?access_token={access_token}&refresh_token={refresh_token}"
         return RedirectResponse(redirect_url)
     
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+
 
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
