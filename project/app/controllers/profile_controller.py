@@ -76,7 +76,6 @@ async def get_user_avatar(db: Session, authorization: str):
         )
 
     return {"avatar_url": user.avatar_path}
-    # return Response(content=avatar_file_path.read_bytes(), media_type="image/jpeg")
 
 
 async def delete_user_avatar(db: Session, authorization: str):
