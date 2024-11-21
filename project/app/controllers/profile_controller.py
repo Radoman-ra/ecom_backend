@@ -60,7 +60,6 @@ async def upload_user_avatar(file: UploadFile, db: Session, authorization: str):
 async def get_user_avatar(db: Session, authorization: str):
 
     user = get_user_by_token(authorization, db)
-
     if not user or not user.avatar_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -74,6 +73,7 @@ async def get_user_avatar(db: Session, authorization: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Avatar file does not exist"
         )
+    
 
     return {"avatar_url": user.avatar_path}
 
