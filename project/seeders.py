@@ -18,14 +18,14 @@ from app.database.tables import (
     User,
 )
 from app.database.database import SessionLocal
-from app.database.database import engine, Base
+from app.database.database import engine, Base, root_engine
 from app.schemas.schemas import UserCreate
 from app.controllers.auth_controller import register_new_user
 
 
 def create_tables():
     print("Creating tables...")
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=root_engine)
     print("Tables created successfully.")
 
 
