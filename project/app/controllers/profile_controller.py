@@ -96,3 +96,33 @@ async def delete_user_avatar(db: Session, authorization: str):
     db.commit()
 
     return {"msg": "Avatar deleted successfully"}
+
+async def upload_avatar_from_url(url: str, user_id: int, db: Session):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        file_extension = imghdr.what(None, response.content)
+        if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid image type from URL. Allowed: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
+            )
+
+        avatar_path = create_avatar_file_path(user_id, file_extension)
+        AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
+
+        with avatar_path.open("wb") as buffer:
+            buffer.write(response.content)
+
+        avatar_url = f"{user_id}.{file_extension}"
+        user = db.query(User).get(user_id)
+        user.avatar_path = avatar_url
+        db.commit()
+
+        return {"msg": "Avatar uploaded successfully", "avatar_url": avatar_url}
+    except requests.RequestException:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to download avatar from URL"
+        )
