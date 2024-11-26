@@ -45,6 +45,9 @@ oauth.register(
 def create_avatar_file_path(user_id: int, file_extension: str):
     return AVATAR_FOLDER / f"{user_id}.{file_extension}"
 
+def login_via_google(request: Request):
+    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
+    return oauth.google.authorize_redirect(request, redirect_uri)
 
 def validate_and_save_avatar(avatar_url: str, user_id: int):
     try:
