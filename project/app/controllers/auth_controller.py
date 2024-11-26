@@ -5,6 +5,7 @@ from app.core.security import (
     create_refresh_token,
     set_jwt_cookie,
     remove_jwt_cookie,
+    verify_refresh_token,
 )
 from app.schemas.schemas import TokenResponse, TokenResponseGoogle, UserCreate, LoginFrom
 from app.database.tables import User, UserType
@@ -12,7 +13,6 @@ from app.utils.utils import (
     verify_password,
     get_user_by_email,
     hash_password,
-    verify_refresh_token,
 )
 from fastapi import HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
