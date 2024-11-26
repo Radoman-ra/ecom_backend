@@ -12,13 +12,13 @@ from app.utils.utils import (
     verify_password,
     get_user_by_email,
     hash_password,
+    verify_refresh_token,
 )
 from fastapi import HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 from authlib.integrations.starlette_client import OAuth
 import os
 from pathlib import Path
-import requests
 import uuid
 import imghdr
 
