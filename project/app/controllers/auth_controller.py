@@ -1,23 +1,32 @@
-import uuid
-import os
-from pathlib import Path
-from PIL import Image
-import requests
-from io import BytesIO
-from fastapi import HTTPException, status, Response
+from dotenv import load_dotenv
 from fastapi.responses import RedirectResponse
-from fastapi import Request
-from sqlalchemy.orm import Session
-from app.core.security import create_access_token, create_refresh_token
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    set_jwt_cookie,
+    remove_jwt_cookie,
+    verify_refresh_token,
+)
 from app.schemas.schemas import TokenResponse, TokenResponseGoogle, UserCreate, LoginFrom
 from app.database.tables import User, UserType
-from app.utils.utils import verify_password, get_user_by_email, hash_password
-from app.core.security import verify_refresh_token, remove_jwt_cookie, set_jwt_cookie
+from app.utils.utils import (
+    verify_password,
+    get_user_by_email,
+    hash_password,
+)
+from fastapi import HTTPException, status, Response, Request
+from sqlalchemy.orm import Session
 from authlib.integrations.starlette_client import OAuth
-from dotenv import load_dotenv
+import os
+from pathlib import Path
+import uuid
+import imghdr
 
 env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
+
+AVATAR_FOLDER = Path(__file__).resolve().parent.parent.parent / "static" / "avatars"
+ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 oauth = OAuth()
 oauth.register(
@@ -32,16 +41,44 @@ oauth.register(
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
 
-AVATAR_FOLDER = Path(__file__).resolve().parent.parent.parent / "static" / "avatars"
-AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
-ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 
+def create_avatar_file_path(user_id: int, file_extension: str) -> Path:
+    random_hash = uuid.uuid4().hex
+    avatar_filename = f"{random_hash}.{file_extension}"
+    avatar_path = AVATAR_FOLDER / avatar_filename
+    return avatar_path
 
 def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     return oauth.google.authorize_redirect(request, redirect_uri)
 
-async def handle_google_callback(request: Request, db: Session, response: Response):
+def validate_and_save_avatar(avatar_url: str, user_id: int):
+    try:
+        response = requests.get(avatar_url)
+        response.raise_for_status()
+
+        file_extension = imghdr.what(None, h=response.content)
+        if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid image type."
+            )
+
+        AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
+        avatar_path = create_avatar_file_path(user_id, file_extension)
+        
+        with avatar_path.open("wb") as buffer:
+            buffer.write(response.content)
+        
+        return {"msg": "Avatar saved successfully", "avatar_url": str(avatar_path)}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+async def handle_google_callback(request: Request, db: Session):
     try:
         token = await oauth.google.authorize_access_token(request)
         nonce = token.get('userinfo', {}).get('nonce')
@@ -50,48 +87,32 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
 
         user_info = await oauth.google.parse_id_token(token, nonce=nonce)
 
-        name = user_info.get('name') or user_info['email']
-        email = user_info['email']
-        picture_url = user_info.get('picture')
-
-        existing_user = get_user_by_email(db, email)
+        name = user_info.get('name', user_info['email'])
+        avatar_url = user_info.get('picture')
+        existing_user = get_user_by_email(db, user_info['email'])
         if existing_user:
             if existing_user.user_type != UserType.google:
                 raise HTTPException(
                     status_code=400,
                     detail="User with this email already registered via another method"
                 )
-
-        avatar_path = None
-        if picture_url:
-            try:
-                response = requests.get(picture_url)
-                if response.status_code == 200:
-                    img = Image.open(BytesIO(response.content))
-                    extension = img.format.lower()
-                    if extension not in ALLOWED_IMAGE_EXTENSIONS:
-                        raise HTTPException(status_code=400, detail="Unsupported avatar format")
-                    
-                    random_hash = uuid.uuid4().hex
-                    avatar_filename = f"{random_hash}.{extension}"
-                    avatar_path = AVATAR_FOLDER / avatar_filename
-                    img.save(avatar_path)
-            except Exception as e:
-                print(f"Failed to download avatar: {e}")
-
-        if not existing_user:
+            user = existing_user
+        else:
+            avatar_path = validate_and_save_avatar(avatar_url, user.id)
             user = User(
                 username=name,
-                email=email,
+                email=user_info['email'],
                 password_hash=None,
                 user_type=UserType.google,
-                avatar_path=str(avatar_path) if avatar_path else None
+                avatar_path=avatar_path
             )
             db.add(user)
             db.commit()
             db.refresh(user)
-        else:
-            user = existing_user
+
+        if not user.avatar_path:
+            user.avatar_path = validate_and_save_avatar(avatar_url, user.id)
+            db.commit()
 
         access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
@@ -102,10 +123,8 @@ async def handle_google_callback(request: Request, db: Session, response: Respon
 
     except HTTPException as e:
         raise e
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
-
-
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
     user = get_user_by_email(db, form_data.email)
@@ -128,7 +147,7 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
         token_type="bearer",
     )
 
-# Обновление токена с использованием refresh токена
+
 def refresh_access_token(response: Response, refresh_token: str, db: Session):
     if not refresh_token:
         raise HTTPException(
