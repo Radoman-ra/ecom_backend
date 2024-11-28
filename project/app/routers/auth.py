@@ -20,8 +20,8 @@ async def login_with_google(request: Request):
     return await login_via_google(request)
 
 @router.get("/google/callback")
-async def google_callback(request: Request, response: Response, db: Session = Depends(get_db)):
-    return await handle_google_callback(request, db, response)
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    return await handle_google_callback(request, db)
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
