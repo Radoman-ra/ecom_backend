@@ -78,52 +78,49 @@ def validate_and_save_avatar(avatar_url: str, user_id: int):
         )
 
 
-async def handle_google_callback(request: Request, db: Session):
+def handle_google_callback(request: Request):
     try:
-        token = await oauth.google.authorize_access_token(request)
+        token = oauth.google.authorize_access_token(request)
+        print(f"Token: {token}")
+
         nonce = token.get('userinfo', {}).get('nonce')
         if not nonce:
-            raise HTTPException(status_code=400, detail="Missing nonce in token response")
+            raise HTTPException(status_code=400, detail="Nonce missing in token")
 
-        user_info = await oauth.google.parse_id_token(token, nonce=nonce)
+        user_info = oauth.google.parse_id_token(token, nonce=nonce)
+        print(f"User info: {user_info}")
 
-        name = user_info.get('name', user_info['email'])
         avatar_url = user_info.get('picture')
-        existing_user = get_user_by_email(db, user_info['email'])
-        if existing_user:
-            if existing_user.user_type != UserType.google:
-                raise HTTPException(
-                    status_code=400,
-                    detail="User with this email already registered via another method"
-                )
-            user = existing_user
-        else:
-            avatar_path = validate_and_save_avatar(avatar_url, user.id)
-            user = User(
-                username=name,
+        if avatar_url:
+            avatar_path = validate_and_save_avatar(avatar_url)
+            print(f"Avatar path: {avatar_path}")
+
+        existing_user = db.query(User).filter(User.email == user_info['email']).first()
+        print(f"Existing user: {existing_user}")
+
+        if existing_user and existing_user.user_type != UserType.google:
+            raise HTTPException(status_code=400, detail="Email already registered with a different method")
+
+        if not existing_user:
+            new_user = User(
+                username=user_info['name'],
                 email=user_info['email'],
-                password_hash=None,
                 user_type=UserType.google,
                 avatar_path=avatar_path
             )
-            db.add(user)
+            db.add(new_user)
             db.commit()
-            db.refresh(user)
+            db.refresh(new_user)
 
-        if not user.avatar_path:
-            user.avatar_path = validate_and_save_avatar(avatar_url, user.id)
-            db.commit()
-
-        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
-        refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
-
-        frontend_callback_url = os.getenv("FRONTEND_URL") + "/auth/callback"
-        redirect_url = f"{frontend_callback_url}?access_token={access_token}&refresh_token={refresh_token}"
+        frontend_url = os.getenv("FRONTEND_URL")
+        redirect_url = f"{frontend_url}/auth/callback"
         return RedirectResponse(redirect_url)
 
     except HTTPException as e:
+        print(f"HTTPException: {e.detail}")
         raise e
-    except Exception:
+    except Exception as e:
+        print(f"Error during Google OAuth callback: {e}")
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
