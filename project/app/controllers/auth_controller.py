@@ -72,7 +72,7 @@ def validate_and_save_avatar(avatar_url: str):
             buffer.write(response.content)
         print("Avatar saved successfully")
 
-        return {"msg": "Avatar saved successfully", "avatar_url": str(avatar_path)}
+        return {"msg": "Avatar saved successfully", "avatar_url": str(avatar_path), "avatar_filename": avatar_filename}
     except Exception as e:
         print(f"Error in validate_and_save_avatar: {e}")
         raise HTTPException(
@@ -98,7 +98,9 @@ async def handle_google_callback(request: Request, db: Session):
         avatar_url = user_info.get('picture')
         if avatar_url:
             avatar_path = validate_and_save_avatar(avatar_url)
+            avatar_filename = validate_and_save_avatar(avatar_filename)
             print(f"Avatar path: {avatar_path}")
+            print(f"Avatar filename: {avatar_filename}")
 
         existing_user = db.query(User).filter(User.email == user_info['email']).first()
         print(f"Existing user: {existing_user}")
