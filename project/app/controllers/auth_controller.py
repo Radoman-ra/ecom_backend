@@ -42,7 +42,7 @@ oauth.register(
 )
 
 
-def create_avatar_file_path(user_id: int, file_extension: str) -> Path:
+def create_avatar_file_path(file_extension: str) -> Path:
     random_hash = uuid.uuid4().hex
     avatar_filename = f"{random_hash}.{file_extension}"
     avatar_path = AVATAR_FOLDER / avatar_filename
@@ -52,7 +52,7 @@ def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     return oauth.google.authorize_redirect(request, redirect_uri)
 
-def validate_and_save_avatar(avatar_url: str, user_id: int):
+def validate_and_save_avatar(avatar_url: str):
     try:
         print(f"Fetching avatar from URL: {avatar_url}")
         response = requests.get(avatar_url)
@@ -69,7 +69,7 @@ def validate_and_save_avatar(avatar_url: str, user_id: int):
             )
 
         AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
-        avatar_path = create_avatar_file_path(user_id, file_extension)
+        avatar_path = create_avatar_file_path(file_extension)
         print(f"Avatar path created: {avatar_path}")
 
         with avatar_path.open("wb") as buffer:
