@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 import uuid
 import imghdr
+import requests
 
 env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -87,30 +88,32 @@ async def handle_google_callback(request: Request, db: Session):
         token = await oauth.google.authorize_access_token(request)
         print(f"Token: {token}")
 
-        nonce = token.get('userinfo', {}).get('nonce')
-        if not nonce:
-            print("Nonce missing in token")
-            raise HTTPException(status_code=400, detail="Nonce missing in token")
-
-        user_info = await oauth.google.parse_id_token(token, nonce=nonce)
+        user_info = await oauth.google.userinfo(token=token)
         print(f"User info: {user_info}")
 
+        avatar_filename = None
         avatar_url = user_info.get('picture')
         if avatar_url:
-            avatar_filename = validate_and_save_avatar(avatar_filename)
-            print(f"Avatar filename: {avatar_filename}")
+            result = validate_and_save_avatar(avatar_url)
+            avatar_filename = result['avatar_filename']
+            print(f"Avatar filename saved: {avatar_filename}")
 
         existing_user = db.query(User).filter(User.email == user_info['email']).first()
         print(f"Existing user: {existing_user}")
 
-        if existing_user and existing_user.user_type != UserType.google:
-            print("Email already registered with a different method")
-            raise HTTPException(status_code=400, detail="Email already registered with a different method")
-
-        if not existing_user:
+        if existing_user:
+            if existing_user.user_type != UserType.google:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Email already registered with a different method"
+                )
+            if avatar_filename and existing_user.avatar_path != avatar_filename:
+                existing_user.avatar_path = avatar_filename
+                db.commit()
+        else:
             new_user = User(
-                username=user_info['email'],
-                email=user_info['email'],
+                username=user_info.get('email'),
+                email=user_info.get('email'),
                 user_type=UserType.google,
                 avatar_path=avatar_filename
             )
@@ -121,7 +124,6 @@ async def handle_google_callback(request: Request, db: Session):
 
         frontend_url = os.getenv("FRONTEND_URL")
         redirect_url = f"{frontend_url}/auth/callback"
-        print(f"Redirecting to: {redirect_url}")
         return RedirectResponse(redirect_url)
 
     except HTTPException as e:
@@ -129,7 +131,10 @@ async def handle_google_callback(request: Request, db: Session):
         raise e
     except Exception as e:
         print(f"Error during Google OAuth callback: {e}")
-        raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Google OAuth callback failed"
+        )
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
     print(f"Logging in user with email: {form_data.email}")
