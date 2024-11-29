@@ -41,13 +41,6 @@ oauth.register(
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
 
-
-def create_avatar_file_path(file_extension: str) -> Path:
-    random_hash = uuid.uuid4().hex
-    avatar_filename = f"{random_hash}.{file_extension}"
-    avatar_path = AVATAR_FOLDER / avatar_filename
-    return avatar_path
-
 def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     print(f"Redirect URI: {redirect_uri}")
@@ -70,7 +63,9 @@ def validate_and_save_avatar(avatar_url: str):
             )
 
         AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
-        avatar_path = create_avatar_file_path(file_extension)
+        random_hash = uuid.uuid4().hex
+        avatar_filename = f"{random_hash}.{file_extension}"
+        avatar_path = AVATAR_FOLDER / avatar_filename
         print(f"Avatar path created: {avatar_path}")
 
         with avatar_path.open("wb") as buffer:
@@ -117,7 +112,7 @@ async def handle_google_callback(request: Request, db: Session):
                 username=user_info['email'],
                 email=user_info['email'],
                 user_type=UserType.google,
-                avatar_path=avatar_path
+                avatar_path=avatar_filename
             )
             db.add(new_user)
             db.commit()
