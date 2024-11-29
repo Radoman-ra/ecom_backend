@@ -50,6 +50,7 @@ def create_avatar_file_path(file_extension: str) -> Path:
 
 def login_via_google(request: Request):
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
+    print(f"Redirect URI: {redirect_uri}")
     return oauth.google.authorize_redirect(request, redirect_uri)
 
 def validate_and_save_avatar(avatar_url: str):
@@ -87,11 +88,13 @@ def validate_and_save_avatar(avatar_url: str):
 
 def handle_google_callback(request: Request, db: Session):
     try:
+        print("Handling Google callback")
         token = oauth.google.authorize_access_token(request)
         print(f"Token: {token}")
 
         nonce = token.get('userinfo', {}).get('nonce')
         if not nonce:
+            print("Nonce missing in token")
             raise HTTPException(status_code=400, detail="Nonce missing in token")
 
         user_info = oauth.google.parse_id_token(token, nonce=nonce)
@@ -106,6 +109,7 @@ def handle_google_callback(request: Request, db: Session):
         print(f"Existing user: {existing_user}")
 
         if existing_user and existing_user.user_type != UserType.google:
+            print("Email already registered with a different method")
             raise HTTPException(status_code=400, detail="Email already registered with a different method")
 
         if not existing_user:
@@ -118,9 +122,11 @@ def handle_google_callback(request: Request, db: Session):
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
+            print(f"New user created: {new_user}")
 
         frontend_url = os.getenv("FRONTEND_URL")
         redirect_url = f"{frontend_url}/auth/callback"
+        print(f"Redirecting to: {redirect_url}")
         return RedirectResponse(redirect_url)
 
     except HTTPException as e:
@@ -131,8 +137,10 @@ def handle_google_callback(request: Request, db: Session):
         raise HTTPException(status_code=500, detail="Google OAuth callback failed")
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
+    print(f"Logging in user with email: {form_data.email}")
     user = get_user_by_email(db, form_data.email)
     if not user or not verify_password(form_data.password, user.password_hash):
+        print("Invalid credentials")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -144,6 +152,8 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
     refresh_token = create_refresh_token(
         data={"sub": user.email, "user_id": user.id}
     )
+    print(f"Access token: {access_token}")
+    print(f"Refresh token: {refresh_token}")
 
     return TokenResponse(
         access_token=access_token,
@@ -153,7 +163,9 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
 
 
 def refresh_access_token(response: Response, refresh_token: str, db: Session):
+    print(f"Refreshing access token with refresh token: {refresh_token}")
     if not refresh_token:
+        print("Refresh token missing")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token missing",
@@ -161,7 +173,9 @@ def refresh_access_token(response: Response, refresh_token: str, db: Session):
 
     try:
         token_data = verify_refresh_token(refresh_token)
+        print(f"Token data: {token_data}")
     except Exception:
+        print("Invalid refresh token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
@@ -171,6 +185,7 @@ def refresh_access_token(response: Response, refresh_token: str, db: Session):
         data={"sub": token_data["sub"], "user_id": token_data["user_id"]}
     )
     set_jwt_cookie(response, access_token, refresh_token)
+    print(f"New access token: {access_token}")
 
     return TokenResponse(
         access_token=access_token,
@@ -179,14 +194,17 @@ def refresh_access_token(response: Response, refresh_token: str, db: Session):
     )
 
 def logout_user(response: Response, authorization: str):
+    print("Logging out user")
     remove_jwt_cookie(response)
     return {"msg": "Successfully logged out"}
 
 def register_new_user(user_data: UserCreate, db: Session):
+    print(f"Registering new user with email: {user_data.email}")
     existing_user = (
         db.query(User).filter(User.email == user_data.email).first()
     )
     if existing_user:
+        print("Email already registered")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -200,6 +218,7 @@ def register_new_user(user_data: UserCreate, db: Session):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    print(f"New user registered: {new_user}")
 
     return UserCreate(
         username=new_user.username,
