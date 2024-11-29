@@ -85,7 +85,7 @@ def validate_and_save_avatar(avatar_url: str, user_id: int):
         )
 
 
-def handle_google_callback(request: Request):
+def handle_google_callback(request: Request, db: Session):
     try:
         token = oauth.google.authorize_access_token(request)
         print(f"Token: {token}")
