@@ -115,9 +115,8 @@ async def handle_google_callback(request: Request, db: Session):
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            print(f"New user created: {new_user}")
             
-        user = get_user_by_email(db, new_user.email)
+        user = get_user_by_email(db, user_info.email)
         access_token = create_access_token(
             data={"sub": user_info.get('email'), "user_id": user.id}
         )
