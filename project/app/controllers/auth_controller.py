@@ -54,11 +54,15 @@ def login_via_google(request: Request):
 
 def validate_and_save_avatar(avatar_url: str, user_id: int):
     try:
+        print(f"Fetching avatar from URL: {avatar_url}")
         response = requests.get(avatar_url)
         response.raise_for_status()
+        print("Avatar fetched successfully")
 
         file_extension = imghdr.what(None, h=response.content)
+        print(f"Detected file extension: {file_extension}")
         if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
+            print("Invalid image type detected")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid image type."
@@ -66,12 +70,15 @@ def validate_and_save_avatar(avatar_url: str, user_id: int):
 
         AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
         avatar_path = create_avatar_file_path(user_id, file_extension)
-        
+        print(f"Avatar path created: {avatar_path}")
+
         with avatar_path.open("wb") as buffer:
             buffer.write(response.content)
-        
+        print("Avatar saved successfully")
+
         return {"msg": "Avatar saved successfully", "avatar_url": str(avatar_path)}
     except Exception as e:
+        print(f"Error in validate_and_save_avatar: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
