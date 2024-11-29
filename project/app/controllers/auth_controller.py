@@ -119,10 +119,10 @@ async def handle_google_callback(request: Request, db: Session):
             
         user = get_user_by_email(db, new_user.email)
         access_token = create_access_token(
-            data={"sub": existing_user.email if existing_user else new_user.email, "user_id": user.id}
+            data={"sub": user_info.get('email'), "user_id": user.id}
         )
         refresh_token = create_refresh_token(
-            data={"sub": existing_user.email if existing_user else new_user.email, "user_id": user.id}
+            data={"sub": user_info.get('email'), "user_id": user.id}
         )
 
         frontend_url = os.getenv("FRONTEND_URL")
