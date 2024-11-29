@@ -43,15 +43,19 @@ oauth.register(
 )
 
 def login_via_google(request: Request):
+    print("login_via_google called")
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
+    print(f"Redirect URI: {redirect_uri}")
     return oauth.google.authorize_redirect(request, redirect_uri)
 
 def validate_and_save_avatar(avatar_url: str):
+    print(f"validate_and_save_avatar called with avatar_url: {avatar_url}")
     try:
         response = requests.get(avatar_url)
         response.raise_for_status()
 
         file_extension = imghdr.what(None, h=response.content)
+        print(f"File extension: {file_extension}")
         if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -66,17 +70,22 @@ def validate_and_save_avatar(avatar_url: str):
         with avatar_path.open("wb") as buffer:
             buffer.write(response.content)
 
+        print(f"Avatar saved as: {avatar_filename}")
         return {"msg": "Avatar saved successfully", "avatar_filename": str(avatar_filename)}
     except Exception as e:
+        print(f"Error in validate_and_save_avatar: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
 
 async def handle_google_callback(request: Request, db: Session):
+    print("handle_google_callback called")
     try:
         token = await oauth.google.authorize_access_token(request)
+        print(f"Token: {token}")
         user_info = await oauth.google.userinfo(token=token)
+        print(f"User info: {user_info}")
 
         avatar_filename = None
         avatar_url = user_info.get('picture')
@@ -85,6 +94,7 @@ async def handle_google_callback(request: Request, db: Session):
             avatar_filename = result['avatar_filename']
 
         existing_user = db.query(User).filter(User.email == user_info['email']).first()
+        print(f"Existing user: {existing_user}")
 
         if existing_user:
             if existing_user.user_type != UserType.google:
@@ -105,6 +115,7 @@ async def handle_google_callback(request: Request, db: Session):
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
+            print(f"New user created: {new_user}")
             
         user = get_user_by_email(db, new_user.email)
         access_token = create_access_token(
@@ -116,19 +127,24 @@ async def handle_google_callback(request: Request, db: Session):
 
         frontend_url = os.getenv("FRONTEND_URL")
         redirect_url = f"{frontend_url}/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
+        print(f"Redirect URL: {redirect_url}")
         return RedirectResponse(redirect_url)
 
     except HTTPException as e:
+        print(f"HTTPException in handle_google_callback: {e}")
         raise e
     except Exception as e:
+        print(f"Exception in handle_google_callback: {e}")
         raise HTTPException(
             status_code=500,
             detail="Google OAuth callback failed"
         )
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
+    print(f"login_user called with form_data: {form_data}")
     user = get_user_by_email(db, form_data.email)
     if not user or not verify_password(form_data.password, user.password_hash):
+        print("Invalid credentials")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -141,6 +157,7 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
         data={"sub": user.email, "user_id": user.id}
     )
 
+    print(f"Access token: {access_token}, Refresh token: {refresh_token}")
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -148,7 +165,9 @@ def login_user(form_data: LoginFrom, db: Session, response: Response):
     )
 
 def refresh_access_token(response: Response, refresh_token: str, db: Session):
+    print(f"refresh_access_token called with refresh_token: {refresh_token}")
     if not refresh_token:
+        print("Refresh token missing")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token missing",
@@ -156,7 +175,9 @@ def refresh_access_token(response: Response, refresh_token: str, db: Session):
 
     try:
         token_data = verify_refresh_token(refresh_token)
+        print(f"Token data: {token_data}")
     except Exception:
+        print("Invalid refresh token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
@@ -167,6 +188,7 @@ def refresh_access_token(response: Response, refresh_token: str, db: Session):
     )
     set_jwt_cookie(response, access_token, refresh_token)
 
+    print(f"New access token: {access_token}")
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -174,14 +196,17 @@ def refresh_access_token(response: Response, refresh_token: str, db: Session):
     )
 
 def logout_user(response: Response, authorization: str):
+    print("logout_user called")
     remove_jwt_cookie(response)
     return {"msg": "Successfully logged out"}
 
 def register_new_user(user_data: UserCreate, db: Session):
+    print(f"register_new_user called with user_data: {user_data}")
     existing_user = (
         db.query(User).filter(User.email == user_data.email).first()
     )
     if existing_user:
+        print("Email already registered")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -196,6 +221,7 @@ def register_new_user(user_data: UserCreate, db: Session):
     db.commit()
     db.refresh(new_user)
 
+    print(f"New user registered: {new_user}")
     return UserCreate(
         username=new_user.username,
         email=new_user.email,
