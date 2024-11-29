@@ -122,8 +122,15 @@ async def handle_google_callback(request: Request, db: Session):
             db.refresh(new_user)
             print(f"New user created: {new_user}")
 
+        access_token = create_access_token(
+            data={"sub": existing_user.email if existing_user else new_user.email}
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": existing_user.email if existing_user else new_user.email}
+        )
+
         frontend_url = os.getenv("FRONTEND_URL")
-        redirect_url = f"{frontend_url}/auth/callback"
+        redirect_url = f"{frontend_url}/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
         return RedirectResponse(redirect_url)
 
     except HTTPException as e:
