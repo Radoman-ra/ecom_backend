@@ -97,7 +97,7 @@ async def handle_google_callback(request: Request, db: Session):
             print("Nonce missing in token")
             raise HTTPException(status_code=400, detail="Nonce missing in token")
 
-        user_info = oauth.google.parse_id_token(token, nonce=nonce)
+        user_info = await oauth.google.parse_id_token(token, nonce=nonce)
         print(f"User info: {user_info}")
 
         avatar_url = user_info.get('picture')
