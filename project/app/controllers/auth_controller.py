@@ -114,7 +114,7 @@ async def handle_google_callback(request: Request, db: Session):
 
         if not existing_user:
             new_user = User(
-                username=user_info['name'],
+                username=user_info['email'],
                 email=user_info['email'],
                 user_type=UserType.google,
                 avatar_path=avatar_path
