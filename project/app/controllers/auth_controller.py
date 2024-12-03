@@ -21,7 +21,10 @@ import os
 from pathlib import Path
 import uuid
 import imghdr
+<<<<<<< HEAD
 import requests
+=======
+>>>>>>> main
 
 env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -42,19 +45,31 @@ oauth.register(
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
 
+<<<<<<< HEAD
+=======
+
+def create_avatar_file_path(user_id: int, file_extension: str):
+    return AVATAR_FOLDER / f"{user_id}.{file_extension}"
+
+>>>>>>> main
 def login_via_google(request: Request):
     print("login_via_google called")
     redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
     print(f"Redirect URI: {redirect_uri}")
     return oauth.google.authorize_redirect(request, redirect_uri)
 
+<<<<<<< HEAD
 def validate_and_save_avatar(avatar_url: str):
     print(f"validate_and_save_avatar called with avatar_url: {avatar_url}")
+=======
+def validate_and_save_avatar(avatar_url: str, user_id: int):
+>>>>>>> main
     try:
         response = requests.get(avatar_url)
         response.raise_for_status()
 
         file_extension = imghdr.what(None, h=response.content)
+<<<<<<< HEAD
         print(f"File extension: {file_extension}")
         if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
             raise HTTPException(
@@ -86,6 +101,33 @@ async def handle_google_callback(request: Request, db: Session):
         print(f"Token: {token}")
         user_info = await oauth.google.userinfo(token=token)
         print(f"User info: {user_info}")
+=======
+        if file_extension not in ALLOWED_IMAGE_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid image type. Allowed types: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
+            )
+
+        avatar_path = create_avatar_file_path(user_id, file_extension)
+        AVATAR_FOLDER.mkdir(parents=True, exist_ok=True)
+        with avatar_path.open("wb") as buffer:
+            buffer.write(response.content)
+
+        return f"{user_id}.{file_extension}"
+    except requests.RequestException:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to download avatar from URL"
+        )
+
+
+async def handle_google_callback(request: Request, db: Session):
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        nonce = token.get('userinfo', {}).get('nonce')
+        if not nonce:
+            raise HTTPException(status_code=400, detail="Missing nonce in token response")
+>>>>>>> main
 
         avatar_filename = None
         avatar_url = user_info.get('picture')
@@ -93,15 +135,22 @@ async def handle_google_callback(request: Request, db: Session):
             result = validate_and_save_avatar(avatar_url)
             avatar_filename = result['avatar_filename']
 
+<<<<<<< HEAD
         existing_user = db.query(User).filter(User.email == user_info['email']).first()
         print(f"Existing user: {existing_user}")
 
+=======
+        name = user_info.get('name', user_info['email'])
+        avatar_url = user_info.get('picture')
+        existing_user = get_user_by_email(db, user_info['email'])
+>>>>>>> main
         if existing_user:
             if existing_user.user_type != UserType.google:
                 raise HTTPException(
                     status_code=400,
                     detail="Email already registered with a different method"
                 )
+<<<<<<< HEAD
             if avatar_filename and existing_user.avatar_path != avatar_filename:
                 existing_user.avatar_path = avatar_filename
                 db.commit()
@@ -127,17 +176,45 @@ async def handle_google_callback(request: Request, db: Session):
         frontend_url = os.getenv("FRONTEND_URL")
         redirect_url = f"{frontend_url}/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
         print(f"Redirect URL: {redirect_url}")
+=======
+        else:
+            user = User(
+                username=name,
+                email=user_info['email'],
+                password_hash=None,
+                user_type=UserType.google
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        user = existing_user
+
+        if not user.avatar_path:
+            user.avatar_path = validate_and_save_avatar(avatar_url, user.id)
+            db.commit()
+
+        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
+        refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+
+        frontend_callback_url = os.getenv("FRONTEND_URL") + "/auth/callback"
+        redirect_url = f"{frontend_callback_url}?access_token={access_token}&refresh_token={refresh_token}"
+>>>>>>> main
         return RedirectResponse(redirect_url)
 
     except HTTPException as e:
         print(f"HTTPException in handle_google_callback: {e}")
         raise e
+<<<<<<< HEAD
     except Exception as e:
         print(f"Exception in handle_google_callback: {e}")
         raise HTTPException(
             status_code=500,
             detail="Google OAuth callback failed"
         )
+=======
+    except Exception:
+        raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+>>>>>>> main
 
 def login_user(form_data: LoginFrom, db: Session, response: Response):
     print(f"login_user called with form_data: {form_data}")
